@@ -3,9 +3,6 @@
     "allow": [
       "Bash(supabase --version)",
       "Bash(npx supabase *)",
-      "Bash(SUPABASE_ACCESS_TOKEN=REMOVED_TOKEN npx supabase link --project-ref kymzjrloxvbavuazphvr)",
-      "Bash(SUPABASE_ACCESS_TOKEN=REMOVED_TOKEN npx supabase db push)",
-      "Bash(SUPABASE_ACCESS_TOKEN=REMOVED_TOKEN npx supabase migration list)",
       "Bash(npx create-expo-app@latest . --template blank-typescript --no-install)",
       "Bash(npm info *)",
       "Bash(npx expo@55.0.24 install --fix --dry-run)",
