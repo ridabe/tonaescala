@@ -15,6 +15,7 @@ Este diretório reúne a documentação de produto, técnica e execução do ToN
 - `UX_FLOW.md`: jornadas principais de organizador e participante.
 - `WIREFRAMES_MVP.md`: wireframes textuais das telas essenciais do MVP.
 - `DESIGN_SYSTEM.md`: fundações visuais, componentes, estados e diretrizes mobile.
+- `IDENTIDADE_VISUAL.md`: identidade visual escolhida, paleta, tipografia, tokens e constantes do app.
 - `ROADMAP_EXECUTIVO.md`: fases de entrega, critérios de aceite e riscos.
 
 ## Decisões-base do projeto
@@ -25,4 +26,3 @@ Este diretório reúne a documentação de produto, técnica e execução do ToN
 - Participantes podem entrar em eventos sem criar conta obrigatória.
 - O backend principal é Supabase com PostgreSQL, Auth, Realtime e Edge Functions.
 - Toda tabela sensível deve respeitar isolamento por organização e Row Level Security.
-

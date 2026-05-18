@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(supabase --version)",
+      "Bash(npx supabase *)",
+      "Bash(SUPABASE_ACCESS_TOKEN=REMOVED_TOKEN npx supabase link --project-ref kymzjrloxvbavuazphvr)",
+      "Bash(SUPABASE_ACCESS_TOKEN=REMOVED_TOKEN npx supabase db push)",
+      "Bash(SUPABASE_ACCESS_TOKEN=REMOVED_TOKEN npx supabase migration list)",
+      "Bash(npx create-expo-app@latest . --template blank-typescript --no-install)",
+      "Bash(npm info *)",
+      "Bash(npx expo@55.0.24 install --fix --dry-run)",
+      "Bash(npm install *)",
+      "Bash(npm pack *)",
+      "Bash(npx expo-doctor@latest)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('RN:', d.get\\('devDependencies',{}\\).get\\('react-native','?'\\)\\); print\\('React:', d.get\\('devDependencies',{}\\).get\\('react','?'\\)\\)\")",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const j=JSON.parse\\(d\\); console.log\\('RN:',j.devDependencies?.['react-native'],'React:',j.devDependencies?.['react']\\)\")",
+      "Bash(node -e \"const {execSync}=require\\('child_process'\\); console.log\\(execSync\\('npx expo install expo-constants expo-font expo-linking expo-secure-store expo-splash-screen expo-status-bar lucide-react-native --json 2>&1'\\).toString\\(\\)\\)\")",
+      "Bash(node -e \"const m = require\\('c:/Projetos/ToNaEscala/node_modules/expo/bundledNativeModules.json'\\); const pkgs=['expo-constants','expo-font','expo-linking','expo-secure-store','expo-splash-screen','expo-status-bar']; pkgs.forEach\\(p=>console.log\\(p+':', m[p]\\)\\)\")"
+    ]
+  }
+}

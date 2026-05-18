@@ -19,9 +19,9 @@ O ToNaEscala vence pela simplicidade:
 Entregas:
 
 - Setup React Native + Expo + TypeScript.
-- Supabase DEV e PROD.
+- Supabase PROD.
 - Estrutura de pastas.
-- Tema base light/dark.
+- Tema base verificar no arquivo nIdentidade_visual.
 - Navegação com Expo Router.
 - Configuração de envs.
 - Pipeline EAS inicial.

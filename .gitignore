@@ -10,9 +10,15 @@ skills-lock.json
 .expo/
 dist/
 build/
+android/
+ios/
+expo-env.d.ts
 
 .DS_Store
 Thumbs.db
+
+# MCP config (contains credentials)
+.mcp.json
 
 *.log
 npm-debug.log*
