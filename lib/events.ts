@@ -55,3 +55,23 @@ export async function generateInvite(eventId: string): Promise<string> {
   if (error) throw error;
   return data as string;
 }
+
+export type PublicEventByInvite = {
+  event_id: string;
+  title: string;
+  organization_name: string;
+  category: string | null;
+  location: string | null;
+  start_date: string;
+  end_date: string | null;
+};
+
+export async function getPublicEventByInviteCode(
+  inviteCode: string,
+): Promise<PublicEventByInvite | null> {
+  const { data, error } = await supabase.rpc('get_public_event_by_invite_code', {
+    p_invite_code: inviteCode,
+  });
+  if (error) throw error;
+  return ((data as PublicEventByInvite[]) ?? [])[0] ?? null;
+}

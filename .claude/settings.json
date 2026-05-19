@@ -27,7 +27,12 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('deps worklets:', d.get\\('dependencies',{}\\).get\\('react-native-worklets','N/A'\\)\\); print\\('peerDeps:', d.get\\('peerDependencies',{}\\)\\)\")",
       "Bash(npm view *)",
       "Bash(python -c \"import sys,json; versions=json.load\\(sys.stdin\\); v4=[v for v in versions if v.startswith\\('4.'\\)]; print\\('\\\\n'.join\\(v4[-10:]\\)\\)\")",
-      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('worklets peer:', d.get\\('peerDependencies',{}\\).get\\('react-native-worklets','N/A'\\)\\)\")"
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('worklets peer:', d.get\\('peerDependencies',{}\\).get\\('react-native-worklets','N/A'\\)\\)\")",
+      "Bash(adb devices *)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"

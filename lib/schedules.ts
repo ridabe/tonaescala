@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Schedule, ScheduleCreatePayload } from './types';
+import { createScheduleNotification, sendExpoPush } from './notifications';
 
 export async function fetchSchedules(eventId: string): Promise<Schedule[]> {
   const { data, error } = await supabase
@@ -31,10 +32,27 @@ export async function createSchedule(payload: ScheduleCreatePayload): Promise<Sc
     `)
     .single();
   if (error) throw error;
-  return {
+
+  const schedule = {
     ...data,
     confirmation: Array.isArray(data.confirmation) ? data.confirmation[0] ?? null : data.confirmation,
   };
+
+  // Detect conflicts and notify participant asynchronously (non-blocking)
+  Promise.all([
+    supabase.rpc('detect_schedule_conflicts', { p_participant_id: payload.participant_id }),
+    createScheduleNotification(schedule.id, 'new_schedule'),
+  ]).then(([, pushTokenResult]) => {
+    if (pushTokenResult && typeof pushTokenResult === 'string') {
+      sendExpoPush(
+        pushTokenResult,
+        'Nova escala',
+        `Você foi adicionado a uma escala.`,
+      ).catch(() => {});
+    }
+  }).catch(() => {});
+
+  return schedule;
 }
 
 export async function deleteSchedule(id: string): Promise<void> {

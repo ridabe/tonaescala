@@ -17,6 +17,7 @@ Este diretório reúne a documentação de produto, técnica e execução do ToN
 - `DESIGN_SYSTEM.md`: fundações visuais, componentes, estados e diretrizes mobile.
 - `IDENTIDADE_VISUAL.md`: identidade visual escolhida, paleta, tipografia, tokens e constantes do app.
 - `ROADMAP_EXECUTIVO.md`: fases de entrega, critérios de aceite e riscos.
+- `TESTES_MANUAIS_BETA.md`: roteiro de validacao manual do MVP antes do beta externo.
 
 ## Decisões-base do projeto
 

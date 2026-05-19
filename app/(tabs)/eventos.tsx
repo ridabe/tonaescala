@@ -10,12 +10,15 @@ import {
 import { router } from 'expo-router';
 import { Plus, CalendarPlus } from 'lucide-react-native';
 import { fetchEvents } from '@/lib/events';
+import { reportError } from '@/lib/errorReporting';
 import type { Event } from '@/lib/types';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
-import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
+import { Typography, Spacing, Radius } from '@/constants/Theme';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { SkeletonList } from '@/components/SkeletonBlock';
 import { Card } from '@/components/Card';
 
 function formatDate(iso: string) {
@@ -49,15 +52,21 @@ export default function EventosScreen() {
   const { org } = useOrganization();
   const { colors } = useColorScheme();
   const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!org) return;
+    setError(null);
     try {
       const data = await fetchEvents(org.id);
       setEvents(data);
-    } catch {
-      // silently fail — pull-to-refresh available
+    } catch (err) {
+      reportError(err, { context: 'EventosScreen.load', orgId: org.id });
+      setError('Não foi possível carregar os eventos.');
+    } finally {
+      setLoading(false);
     }
   }, [org]);
 
@@ -72,27 +81,49 @@ export default function EventosScreen() {
   const sections = groupByMonth(events);
   const primary = Colors.brand.primary;
 
+  const header = (
+    <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View>
+        <Text style={[Typography.titleMd, { color: colors.text }]}>Eventos</Text>
+        {org && (
+          <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+            {org.name}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: primary }]}
+        onPress={() => router.push('/events/create')}
+        accessibilityRole="button"
+        accessibilityLabel="Criar novo evento"
+      >
+        <Plus size={20} color="#FFF" strokeWidth={2.5} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {header}
+        <SkeletonList count={4} />
+      </View>
+    );
+  }
+
+  if (error && events.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {header}
+        <ErrorState message={error} onRetry={load} />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View>
-          <Text style={[Typography.titleMd, { color: colors.text }]}>Eventos</Text>
-          {org && (
-            <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
-              {org.name}
-            </Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: primary }]}
-          onPress={() => router.push('/events/create')}
-        >
-          <Plus size={20} color="#FFF" strokeWidth={2.5} />
-        </TouchableOpacity>
-      </View>
+      {header}
 
-      {/* List */}
       <FlatList
         data={sections}
         keyExtractor={(s) => s.month}
@@ -117,6 +148,8 @@ export default function EventosScreen() {
                 <Card
                   onPress={() => router.push(`/events/${ev.id}`)}
                   leftAccent={ev.color}
+                  accessibilityLabel={`${ev.title}, ${formatDate(ev.start_date)}`}
+                  accessibilityHint="Toque para abrir o evento"
                 >
                   <View style={styles.cardRow}>
                     <View style={styles.cardMain}>

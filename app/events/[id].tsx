@@ -13,11 +13,13 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   CalendarDays, MapPin, MoreVertical, Plus, Share2, Tag,
-  Users, ClipboardList, Info, Trash2, Clock,
+  Users, ClipboardList, Info, Trash2, Clock, AlertTriangle, UserCheck,
 } from 'lucide-react-native';
 import { fetchEventById, archiveEvent } from '@/lib/events';
 import { fetchTeams, createTeam, deleteTeam } from '@/lib/teams';
 import { fetchSchedules, deleteSchedule } from '@/lib/schedules';
+import { getEventParticipantsForOrganizer, type EventParticipant } from '@/lib/participants';
+import { supabase } from '@/lib/supabase';
 import type { Event, Team, Schedule } from '@/lib/types';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -25,10 +27,26 @@ import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { SkeletonList } from '@/components/SkeletonBlock';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
+import { reportError } from '@/lib/errorReporting';
 
-type Tab = 'escala' | 'equipes' | 'info';
+type Tab = 'escala' | 'equipes' | 'conflitos' | 'convidados' | 'info';
+
+type EventConflict = {
+  conflict_id: string;
+  participant_name: string;
+  schedule1_id: string;
+  schedule1_role: string | null;
+  schedule1_start: string | null;
+  schedule1_event: string;
+  schedule2_id: string;
+  schedule2_role: string | null;
+  schedule2_start: string | null;
+  schedule2_event: string;
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
@@ -52,7 +70,11 @@ export default function EventDetailScreen() {
   const [event, setEvent] = useState<Event | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [conflicts, setConflicts] = useState<EventConflict[]>([]);
+  const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [tab, setTab] = useState<Tab>('escala');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -63,15 +85,27 @@ export default function EventDetailScreen() {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const [ev, sc] = await Promise.all([
-      fetchEventById(id),
-      fetchSchedules(id),
-    ]);
-    setEvent(ev);
-    setSchedules(sc);
-    if (org) {
-      const t = await fetchTeams(org.id);
-      setTeams(t);
+    setLoadError(null);
+    try {
+      const [ev, sc, pts] = await Promise.all([
+        fetchEventById(id),
+        fetchSchedules(id),
+        getEventParticipantsForOrganizer(id),
+      ]);
+      setEvent(ev);
+      setSchedules(sc);
+      setParticipants(pts);
+      if (org) {
+        const t = await fetchTeams(org.id);
+        setTeams(t);
+      }
+      const { data: cf } = await supabase.rpc('get_event_conflicts_for_organizer', { p_event_id: id });
+      setConflicts((cf as EventConflict[]) ?? []);
+    } catch (err) {
+      reportError(err, { context: 'EventDetailScreen.load', eventId: id });
+      setLoadError('Não foi possível carregar o evento.');
+    } finally {
+      setLoading(false);
     }
   }, [id, org]);
 
@@ -79,6 +113,7 @@ export default function EventDetailScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setLoading(false); // already have data, don't show full skeleton on pull-to-refresh
     await load();
     setRefreshing(false);
   }, [load]);
@@ -105,6 +140,18 @@ export default function EventDetailScreen() {
         },
       },
     ]);
+  }
+
+  function handleScheduleParticipant(participant: EventParticipant) {
+    router.push({
+      pathname: '/events/[id]/add-schedule',
+      params: {
+        id,
+        participant_id: participant.participant_id,
+        participant_name: participant.participant_name,
+        participant_phone: participant.participant_phone ?? '',
+      },
+    });
   }
 
   async function handleDeleteTeam(teamId: string, name: string) {
@@ -136,17 +183,28 @@ export default function EventDetailScreen() {
 
   const primary = Colors.brand.primary;
 
-  // Count confirmations
   const confirmed = schedules.filter((s) => s.confirmation?.status === 'confirmed').length;
   const pending = schedules.filter((s) => !s.confirmation).length;
+  const conflictCount = conflicts.length;
+  const scheduledParticipantIds = new Set(schedules.map((s) => s.participant_id));
+  const conflictedScheduleIds = new Set(
+    conflicts.flatMap((cf) => [cf.schedule1_id, cf.schedule2_id]),
+  );
 
-  if (!event) {
+  if (loading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <ScreenHeader title="Evento" />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={[Typography.body, { color: colors.textMuted }]}>Carregando...</Text>
-        </View>
+        <SkeletonList count={5} />
+      </View>
+    );
+  }
+
+  if (loadError || !event) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <ScreenHeader title="Evento" />
+        <ErrorState message={loadError ?? 'Evento não encontrado.'} onRetry={load} />
       </View>
     );
   }
@@ -178,6 +236,13 @@ export default function EventDetailScreen() {
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <View style={styles.statItem}>
+          <Text style={[Typography.titleMd, { color: conflictCount > 0 ? Colors.status.warning : colors.text }]}>
+            {conflictCount}
+          </Text>
+          <Text style={[Typography.caption, { color: colors.textMuted }]}>Conflitos</Text>
+        </View>
+        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+        <View style={styles.statItem}>
           <Text style={[Typography.titleMd, { color: colors.text }]}>{schedules.length}</Text>
           <Text style={[Typography.caption, { color: colors.textMuted }]}>Total</Text>
         </View>
@@ -185,17 +250,28 @@ export default function EventDetailScreen() {
 
       {/* Tabs */}
       <View style={[styles.tabs, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        {(['escala', 'equipes', 'info'] as Tab[]).map((t) => (
+        {(['escala', 'equipes', 'conflitos', 'convidados', 'info'] as Tab[]).map((t) => (
           <TouchableOpacity
             key={t}
             style={[styles.tabBtn, tab === t && { borderBottomColor: primary, borderBottomWidth: 2 }]}
             onPress={() => setTab(t)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === t }}
+            accessibilityLabel={t === 'escala' ? 'Escala' : t === 'equipes' ? 'Equipes' : t === 'conflitos' ? 'Conflitos' : t === 'convidados' ? 'Presenças' : 'Informações'}
           >
             {t === 'escala' && <ClipboardList size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
             {t === 'equipes' && <Users size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
+            {t === 'conflitos' && (
+              <AlertTriangle
+                size={16}
+                color={tab === t ? primary : conflictCount > 0 ? Colors.status.warning : colors.textMuted}
+                strokeWidth={2}
+              />
+            )}
+            {t === 'convidados' && <UserCheck size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
             {t === 'info' && <Info size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
             <Text style={[Typography.caption, { color: tab === t ? primary : colors.textMuted, marginLeft: 4, textTransform: 'capitalize' }]}>
-              {t === 'escala' ? 'Escala' : t === 'equipes' ? 'Equipes' : 'Info'}
+              {t === 'escala' ? 'Escala' : t === 'equipes' ? 'Equipes' : t === 'conflitos' ? 'Conflitos' : t === 'convidados' ? 'Presenças' : 'Info'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -221,7 +297,7 @@ export default function EventDetailScreen() {
             ) : (
               <>
                 {schedules.map((s) => (
-                  <Card key={s.id} leftAccent={s.team ? undefined : colors.border}>
+                  <Card key={s.id} leftAccent={conflictedScheduleIds.has(s.id) ? Colors.status.warning : s.team ? undefined : colors.border}>
                     <View style={styles.scheduleRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={[Typography.bodyStrong, { color: colors.text }]}>
@@ -232,6 +308,11 @@ export default function EventDetailScreen() {
                         )}
                         {!s.team && s.role && (
                           <Text style={[Typography.caption, { color: colors.textMuted }]}>{s.role}</Text>
+                        )}
+                        {conflictedScheduleIds.has(s.id) && (
+                          <Text style={[Typography.caption, { color: Colors.status.warning, marginTop: 2 }]}>
+                            ⚠ Conflito de horário
+                          </Text>
                         )}
                       </View>
                       {s.confirmation ? (
@@ -297,6 +378,123 @@ export default function EventDetailScreen() {
                 <View style={{ marginTop: Spacing.md }}>
                   <Button label="Nova equipe" variant="outline" icon={Plus} onPress={() => setTeamModalVisible(true)} />
                 </View>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── CONFLITOS ── */}
+        {tab === 'conflitos' && (
+          <>
+            {conflicts.length === 0 ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Sem conflitos"
+                subtitle="Nenhuma sobreposição de horários detectada neste evento."
+              />
+            ) : (
+              conflicts.map((cf) => (
+                <Card key={cf.conflict_id} leftAccent={Colors.status.warning}>
+                  <View style={{ gap: 4 }}>
+                    <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                      {cf.participant_name}
+                    </Text>
+                    <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                      {cf.schedule1_event}{cf.schedule1_role ? ` · ${cf.schedule1_role}` : ''}{cf.schedule1_start ? ` (${new Date(cf.schedule1_start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})` : ''}
+                    </Text>
+                    <Text style={[Typography.caption, { color: Colors.status.warning }]}>
+                      ⚠ conflita com
+                    </Text>
+                    <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                      {cf.schedule2_event}{cf.schedule2_role ? ` · ${cf.schedule2_role}` : ''}{cf.schedule2_start ? ` (${new Date(cf.schedule2_start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})` : ''}
+                    </Text>
+                  </View>
+                </Card>
+              ))
+            )}
+          </>
+        )}
+
+        {/* ── CONVIDADOS / PRESENÇAS ── */}
+        {tab === 'convidados' && (
+          <>
+            {participants.length === 0 ? (
+              <EmptyState
+                icon={UserCheck}
+                title="Nenhum convidado ainda"
+                subtitle="Compartilhe o código de convite para que participantes confirmem presença."
+                actionLabel="Compartilhar convite"
+                onAction={() => router.push(`/events/${id}/invite`)}
+              />
+            ) : (
+              <>
+                <View style={styles.presencaSummary}>
+                  {[
+                    { label: 'Confirmados', value: participants.filter((p) => p.attendance_status === 'confirmed').length, color: Colors.status.success },
+                    { label: 'Pendentes', value: participants.filter((p) => p.attendance_status === 'pending').length, color: colors.textMuted },
+                    { label: 'Não vão', value: participants.filter((p) => p.attendance_status === 'declined').length, color: Colors.status.danger },
+                  ].map((item) => (
+                    <View key={item.label} style={styles.presencaStat}>
+                      <Text style={[Typography.titleMd, { color: item.color }]}>{item.value}</Text>
+                      <Text style={[Typography.caption, { color: colors.textMuted }]}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                {participants.map((p) => {
+                  const isScheduled = scheduledParticipantIds.has(p.participant_id);
+                  const statusColor =
+                    p.attendance_status === 'confirmed' ? Colors.status.success
+                    : p.attendance_status === 'declined' ? Colors.status.danger
+                    : colors.textMuted;
+                  const statusLabel =
+                    p.attendance_status === 'confirmed' ? 'Confirmou'
+                    : p.attendance_status === 'declined' ? 'Não vai'
+                    : 'Pendente';
+                  return (
+                    <Card key={p.participant_id}>
+                      <View style={{ gap: Spacing.sm }}>
+                        <View style={styles.scheduleRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                              {p.participant_name}
+                            </Text>
+                            {p.participant_phone ? (
+                              <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                                {p.participant_phone}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+                            <Text style={[Typography.micro, { color: statusColor }]}>{statusLabel}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.participantActions}>
+                          <View style={[styles.statusBadge, { backgroundColor: isScheduled ? primary + '18' : colors.border }]}>
+                            <Text style={[Typography.micro, { color: isScheduled ? primary : colors.textMuted }]}>
+                              {isScheduled ? 'Na escala' : 'Sem função'}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleScheduleParticipant(p)}
+                            disabled={p.attendance_status === 'declined'}
+                            style={[
+                              styles.scheduleParticipantBtn,
+                              {
+                                borderColor: p.attendance_status === 'declined' ? colors.border : primary,
+                                opacity: p.attendance_status === 'declined' ? 0.5 : 1,
+                              },
+                            ]}
+                          >
+                            <Plus size={14} color={p.attendance_status === 'declined' ? colors.textMuted : primary} strokeWidth={2} />
+                            <Text style={[Typography.caption, { color: p.attendance_status === 'declined' ? colors.textMuted : primary }]}>
+                              {isScheduled ? 'Adicionar função' : 'Escalar'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </Card>
+                  );
+                })}
               </>
             )}
           </>
@@ -459,6 +657,29 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     ...Typography.body,
     minHeight: Layout.minTouchTarget,
+  },
+  presencaSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  presencaStat: { alignItems: 'center' },
+  participantActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  scheduleParticipantBtn: {
+    minHeight: 36,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
   },
   infoSection: { gap: Spacing.xs },
   infoRow: {

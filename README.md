@@ -155,9 +155,10 @@ Documentação completa: [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) e [`do
 | Fase | Status | Descrição |
 |------|--------|-----------|
 | **Fase 0** — Fundação | ✅ Concluída | Expo + Supabase + EAS + Design System + Navegação |
-| **Fase 1** — MVP Organizador | 🚧 Em andamento | Login, CRUD de eventos/equipes/escalas, QR Code |
-| **Fase 2** — MVP Participante | ⏳ Planejada | Entrada sem cadastro, agenda, confirmações |
-| **Fase 3** — Conflitos & Notificações | ⏳ Planejada | Detecção de sobreposição, push notifications |
+| **Fase 1** — MVP Organizador | ✅ Concluída para MVP técnico | Login, CRUD de eventos/equipes/escalas, QR Code |
+| **Fase 2** — MVP Participante | ✅ Concluída para MVP técnico | Entrada sem cadastro, agenda, confirmações |
+| **Fase 3** — Conflitos & Notificações | ✅ Concluída para MVP técnico | Conflitos, notificações in-app e push token |
+| **Fase 4** — Polimento & Beta | ✅ Concluída para beta técnico | Estados vazios, skeletons, erros, offline parcial, Sentry e analytics |
 
 > Detalhes em [`docs/ROADMAP_EXECUTIVO.md`](docs/ROADMAP_EXECUTIVO.md)
 
@@ -173,6 +174,7 @@ Documentação completa: [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) e [`do
 | [`docs/UX_FLOW.md`](docs/UX_FLOW.md) | Jornadas do organizador e do participante |
 | [`docs/WIREFRAMES_MVP.md`](docs/WIREFRAMES_MVP.md) | Wireframes textuais das telas do MVP |
 | [`docs/ROADMAP_EXECUTIVO.md`](docs/ROADMAP_EXECUTIVO.md) | Fases, critérios de aceite e riscos |
+| [`docs/TESTES_MANUAIS_BETA.md`](docs/TESTES_MANUAIS_BETA.md) | Roteiro de validacao manual para beta tecnico |
 
 ---
 

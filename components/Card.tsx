@@ -6,9 +6,11 @@ type Props = {
   children: React.ReactNode;
   onPress?: () => void;
   leftAccent?: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
-export function Card({ children, onPress, leftAccent }: Props) {
+export function Card({ children, onPress, leftAccent, accessibilityLabel, accessibilityHint }: Props) {
   const { colors } = useColorScheme();
 
   const content = (
@@ -25,7 +27,13 @@ export function Card({ children, onPress, leftAccent }: Props) {
 
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+      >
         {content}
       </TouchableOpacity>
     );

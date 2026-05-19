@@ -9,13 +9,14 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { QrCode } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
-import { Typography, Spacing, Radius } from '@/constants/Theme';
+import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 
 type Mode = 'options' | 'email';
 
@@ -76,7 +77,10 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={s.inner}>
-        <Text style={[s.appName, { color: primary }]}>ToNaEscala</Text>
+        <View style={s.logoRow}>
+          <Image source={require('@/assets/images/icon.png')} style={s.logoImg} />
+          <Text style={[s.appName, { color: primary }]}>ToNaEscala</Text>
+        </View>
         <Text style={[s.tagline, { color: colors.textMuted }]}>
           Escalas organizadas para pessoas que servem juntas
         </Text>
@@ -98,6 +102,8 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={[s.qrBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
               onPress={() => router.push('/scan-qr')}
+              accessibilityRole="button"
+              accessibilityLabel="Escanear QR Code"
             >
               <QrCode size={22} color={primary} strokeWidth={2} />
             </TouchableOpacity>
@@ -106,6 +112,9 @@ export default function LoginScreen() {
             style={[s.btn, s.btnOutline, { borderColor: primary }]}
             onPress={handleEnterByCode}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="Entrar no evento pelo código"
+            accessibilityState={{ disabled: loading }}
           >
             {loading ? (
               <ActivityIndicator color={primary} />
@@ -128,12 +137,17 @@ export default function LoginScreen() {
               style={[s.btn, s.btnPrimary, { backgroundColor: primary }]}
               onPress={handleGoogleLogin}
               disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel="Entrar com Google"
+              accessibilityState={{ disabled: loading }}
             >
               <Text style={[s.btnText, { color: '#FFF' }]}>Entrar com Google</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.btn, s.btnOutline, { borderColor: primary, marginTop: Spacing.sm }]}
               onPress={() => setMode('email')}
+              accessibilityRole="button"
+              accessibilityLabel="Entrar com e-mail"
             >
               <Text style={[s.btnText, { color: primary }]}>Entrar com e-mail</Text>
             </TouchableOpacity>
@@ -161,6 +175,9 @@ export default function LoginScreen() {
               style={[s.btn, s.btnPrimary, { backgroundColor: primary, marginTop: Spacing.md }]}
               onPress={handleEmailLogin}
               disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel="Entrar com e-mail e senha"
+              accessibilityState={{ disabled: loading, busy: loading }}
             >
               {loading ? <ActivityIndicator color="#FFF" /> : <Text style={[s.btnText, { color: '#FFF' }]}>Entrar</Text>}
             </TouchableOpacity>
@@ -168,10 +185,17 @@ export default function LoginScreen() {
               style={[s.btn, { marginTop: Spacing.sm }]}
               onPress={handleEmailSignUp}
               disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel="Criar conta nova"
             >
               <Text style={[s.btnText, { color: colors.textMuted }]}>Criar conta</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setMode('options')} style={s.back}>
+            <TouchableOpacity
+              onPress={() => setMode('options')}
+              style={s.back}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para opções de login"
+            >
               <Text style={[Typography.caption, { color: colors.textMuted }]}>Voltar</Text>
             </TouchableOpacity>
           </View>
@@ -190,14 +214,24 @@ const styles = (colors: ReturnType<typeof import('@/hooks/useColorScheme').useCo
       paddingHorizontal: Spacing.xl,
       paddingBottom: Spacing.xxl,
     },
+    logoRow: {
+      alignItems: 'center',
+      marginBottom: Spacing.xs,
+    },
+    logoImg: {
+      width: 72,
+      height: 72,
+      borderRadius: 16,
+      marginBottom: Spacing.sm,
+    },
     appName: {
       ...Typography.display,
       textAlign: 'center',
-      marginBottom: Spacing.xs,
     },
     tagline: {
       ...Typography.body,
       textAlign: 'center',
+      marginTop: Spacing.xs,
       marginBottom: Spacing.xxl,
     },
     sectionLabel: {
@@ -247,6 +281,3 @@ const styles = (colors: ReturnType<typeof import('@/hooks/useColorScheme').useCo
     dividerText: { ...Typography.caption },
     back: { marginTop: Spacing.md, alignSelf: 'center' },
   });
-
-// needed for StyleSheet reference above
-import { Layout } from '@/constants/Theme';

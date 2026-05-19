@@ -13,7 +13,6 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { fetchEventById, updateEvent } from '@/lib/events';
-import type { Event } from '@/lib/types';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
@@ -40,7 +39,6 @@ export default function EditEventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useColorScheme();
 
-  const [event, setEvent] = useState<Event | null>(null);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
@@ -55,7 +53,6 @@ export default function EditEventScreen() {
     if (!id) return;
     fetchEventById(id).then((ev) => {
       if (!ev) return;
-      setEvent(ev);
       setTitle(ev.title);
       setCategory(ev.category ?? '');
       setLocation(ev.location ?? '');

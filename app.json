@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "tonaescala",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -20,7 +19,6 @@
     "android": {
       "package": "com.tonaescala.app",
       "versionCode": 1,
-      "edgeToEdge": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0F766E"
@@ -43,7 +41,10 @@
         }
       ],
       "expo-secure-store",
-      "expo-camera"
+      "expo-camera",
+      "@sentry/react-native",
+      "@react-native-community/datetimepicker",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

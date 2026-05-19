@@ -70,7 +70,6 @@ export default function ScheduleDetailScreen() {
   const [status, setStatus] = useState<string>(initialStatus ?? '');
   const [loadingAction, setLoadingAction] = useState<ConfirmationStatus | null>(null);
 
-  const primary = Colors.brand.primary;
   const conflict = has_conflict === '1';
   const displayRole = [team_name, role].filter(Boolean).join(' · ');
 

@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
@@ -9,13 +8,17 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Calendar, QrCode } from 'lucide-react-native';
-import { getParticipantAgenda, type AgendaItem } from '@/lib/participants';
+import type { AgendaItem } from '@/lib/participants';
 import { useParticipant } from '@/hooks/useParticipant';
+import { useOfflineAgenda } from '@/hooks/useOfflineAgenda';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius } from '@/constants/Theme';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
+import { SkeletonList } from '@/components/SkeletonBlock';
 import { Card } from '@/components/Card';
+import { useState, useCallback } from 'react';
 
 const STATUS_LABEL: Record<string, string> = {
   confirmed: 'Confirmado',
@@ -63,35 +66,41 @@ function groupByEvent(items: AgendaItem[]): EventGroup[] {
 export default function AgendaScreen() {
   const { session, loading: sessionLoading } = useParticipant();
   const { colors } = useColorScheme();
-  const [agenda, setAgenda] = useState<AgendaItem[]>([]);
+  const { agenda, loading, error, isStale, reload } = useOfflineAgenda(
+    session?.participantId,
+    session?.token,
+  );
   const [refreshing, setRefreshing] = useState(false);
 
   const primary = Colors.brand.primary;
 
-  const load = useCallback(async () => {
-    if (!session) return;
-    try {
-      const data = await getParticipantAgenda(session.participantId, session.token);
-      setAgenda(data);
-    } catch {
-      // silently fail — pull-to-refresh available
-    }
-  }, [session]);
-
-  useEffect(() => { load(); }, [load]);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await load();
+    await reload();
     setRefreshing(false);
-  }, [load]);
+  }, [reload]);
+
+  const header = (
+    <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <Text style={[Typography.titleMd, { color: colors.text }]}>Agenda</Text>
+      {session && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: primary }]}
+          onPress={() => router.push('/scan-qr')}
+          accessibilityRole="button"
+          accessibilityLabel="Escanear QR Code"
+        >
+          <QrCode size={18} color="#FFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   if (sessionLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[Typography.titleMd, { color: colors.text }]}>Agenda</Text>
-        </View>
+        {header}
+        <SkeletonList count={3} />
       </View>
     );
   }
@@ -99,9 +108,7 @@ export default function AgendaScreen() {
   if (!session) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[Typography.titleMd, { color: colors.text }]}>Agenda</Text>
-        </View>
+        {header}
         <View style={{ flex: 1 }}>
           <EmptyState
             icon={Calendar}
@@ -115,19 +122,37 @@ export default function AgendaScreen() {
     );
   }
 
+  if (loading && agenda.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {header}
+        <SkeletonList count={4} />
+      </View>
+    );
+  }
+
+  if (error && agenda.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {header}
+        <ErrorState offline message={error} onRetry={reload} />
+      </View>
+    );
+  }
+
   const groups = groupByEvent(agenda);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[Typography.titleMd, { color: colors.text }]}>Agenda</Text>
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: primary }]}
-          onPress={() => router.push('/scan-qr')}
-        >
-          <QrCode size={18} color="#FFF" strokeWidth={2.5} />
-        </TouchableOpacity>
-      </View>
+      {header}
+
+      {isStale && (
+        <View style={[styles.staleBanner, { backgroundColor: Colors.status.warningSoft }]}>
+          <Text style={[Typography.caption, { color: Colors.status.warning }]}>
+            Exibindo dados salvos · Sem conexão
+          </Text>
+        </View>
+      )}
 
       <FlatList
         data={groups}
@@ -168,6 +193,8 @@ export default function AgendaScreen() {
                       },
                     })
                   }
+                  accessibilityLabel={`${item.team_name ?? 'Geral'}${item.role ? `, ${item.role}` : ''}${item.start_time ? `, ${formatTime(item.start_time)}` : ''}`}
+                  accessibilityHint="Toque para ver detalhes da escala"
                 >
                   <View style={styles.scheduleRow}>
                     <View style={{ flex: 1 }}>
@@ -224,6 +251,11 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: Radius.full,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  staleBanner: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xs,
     alignItems: 'center',
   },
   emptyContainer: { flex: 1 },

@@ -17,6 +17,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { getOrCreateDeviceId } from '@/lib/deviceId';
+import { analytics } from '@/lib/analytics';
 
 export default function EnterEventScreen() {
   const { invite_code } = useLocalSearchParams<{ invite_code: string }>();
@@ -46,7 +47,10 @@ export default function EnterEventScreen() {
     }
     await SecureStore.setItemAsync('participant_id', data.participant_id);
     await SecureStore.setItemAsync('participant_access_token', data.participant_access_token);
-    router.replace('/(tabs)/agenda');
+    await SecureStore.setItemAsync('participant_event_id', data.event_id);
+    await SecureStore.setItemAsync('participant_invite_code', String(invite_code));
+    analytics.track('participant_joined', { event_id: data.event_id });
+    router.replace('/guest-event');
   }
 
   return (

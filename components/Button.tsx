@@ -14,6 +14,8 @@ type Props = {
   disabled?: boolean;
   icon?: LucideIcon;
   fullWidth?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
 export function Button({
@@ -24,6 +26,8 @@ export function Button({
   disabled = false,
   icon: Icon,
   fullWidth = true,
+  accessibilityLabel,
+  accessibilityHint,
 }: Props) {
   const { colors } = useColorScheme();
   const primary = Colors.brand.primary;
@@ -55,6 +59,10 @@ export function Button({
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={[
         styles.base,
         { backgroundColor: bg[variant], alignSelf: fullWidth ? 'stretch' : 'flex-start' },

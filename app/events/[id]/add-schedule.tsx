@@ -21,6 +21,7 @@ import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { analytics } from '@/lib/analytics';
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
 function toISOLocal(d: Date) {
@@ -32,14 +33,28 @@ function displayTime(d: Date) {
 
 type PickerTarget = 'start' | 'end' | null;
 
+function readParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default function AddScheduleScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    participant_id?: string;
+    participant_name?: string;
+    participant_phone?: string;
+  }>();
+  const id = readParam(params.id);
+  const existingParticipantId = readParam(params.participant_id);
+  const existingParticipantName = readParam(params.participant_name) ?? '';
+  const existingParticipantPhone = readParam(params.participant_phone) ?? '';
+  const hasSelectedParticipant = Boolean(existingParticipantId);
   const { org } = useOrganization();
   const { colors } = useColorScheme();
 
   const [teams, setTeams] = useState<Team[]>([]);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [name, setName] = useState(existingParticipantName);
+  const [phone, setPhone] = useState(existingParticipantPhone);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [role, setRole] = useState('');
   const [notes, setNotes] = useState('');
@@ -68,11 +83,15 @@ export default function AddScheduleScreen() {
   }
 
   async function handleSave() {
-    if (!name.trim()) { Alert.alert('Nome obrigatório', 'Informe o nome do participante.'); return; }
+    if (!hasSelectedParticipant && !name.trim()) {
+      Alert.alert('Nome obrigatorio', 'Informe o nome do participante.');
+      return;
+    }
     if (!id) return;
     setLoading(true);
     try {
-      const participantId = await createParticipantAsOrganizer(name.trim(), phone.trim() || undefined);
+      const participantId = existingParticipantId
+        ?? await createParticipantAsOrganizer(name.trim(), phone.trim() || undefined);
       await createSchedule({
         event_id: id,
         participant_id: participantId,
@@ -82,6 +101,7 @@ export default function AddScheduleScreen() {
         start_time: useCustomTime ? toISOLocal(startTime) : undefined,
         end_time: useCustomTime ? toISOLocal(endTime) : undefined,
       });
+      analytics.track('schedule_created', { event_id: id, participant_id: participantId });
       router.back();
     } catch (e: any) {
       Alert.alert('Erro', e.message);
@@ -97,30 +117,45 @@ export default function AddScheduleScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScreenHeader title="Adicionar à escala" />
+      <ScreenHeader title={hasSelectedParticipant ? 'Escalar participante' : 'Adicionar a escala'} />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Label>NOME DO PARTICIPANTE *</Label>
-        <TextInput
-          style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-          placeholder="Ex: Alexandre Silva"
-          placeholderTextColor={colors.textSoft}
-          value={name}
-          onChangeText={setName}
-          autoFocus
-        />
+        {hasSelectedParticipant ? (
+          <View style={[styles.selectedParticipantBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[Typography.caption, { color: colors.textMuted }]}>PARTICIPANTE CONFIRMADO</Text>
+            <Text style={[Typography.bodyStrong, { color: colors.text, marginTop: 4 }]}>
+              {existingParticipantName || 'Participante'}
+            </Text>
+            {existingParticipantPhone ? (
+              <Text style={[Typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
+                {existingParticipantPhone}
+              </Text>
+            ) : null}
+          </View>
+        ) : (
+          <>
+            <Label>NOME DO PARTICIPANTE *</Label>
+            <TextInput
+              style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+              placeholder="Ex: Alexandre Silva"
+              placeholderTextColor={colors.textSoft}
+              value={name}
+              onChangeText={setName}
+              autoFocus
+            />
 
-        <Label mt>TELEFONE</Label>
-        <TextInput
-          style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-          placeholder="+55 11 99999-9999"
-          placeholderTextColor={colors.textSoft}
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-        />
+            <Label mt>TELEFONE</Label>
+            <TextInput
+              style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+              placeholder="+55 11 99999-9999"
+              placeholderTextColor={colors.textSoft}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+          </>
+        )}
 
-        {/* Equipe */}
         {teams.length > 0 && (
           <>
             <Label mt>EQUIPE</Label>
@@ -144,30 +179,29 @@ export default function AddScheduleScreen() {
           </>
         )}
 
-        <Label mt>FUNÇÃO</Label>
+        <Label mt>FUNCAO</Label>
         <TextInput
           style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-          placeholder="Ex: Vocal Soprano, Guitarra, Recepção"
+          placeholder="Ex: Vocal Soprano, Guitarra, Recepcao"
           placeholderTextColor={colors.textSoft}
           value={role}
           onChangeText={setRole}
         />
 
-        {/* Horário personalizado */}
         <TouchableOpacity
           style={[styles.toggleRow, { borderColor: colors.border }]}
           onPress={() => setUseCustomTime(!useCustomTime)}
         >
           <View style={[styles.checkbox, { borderColor: useCustomTime ? primary : colors.border, backgroundColor: useCustomTime ? primary : 'transparent' }]} />
           <Text style={[Typography.body, { color: colors.text, marginLeft: Spacing.sm }]}>
-            Horário diferente do evento
+            Horario diferente do evento
           </Text>
         </TouchableOpacity>
 
         {useCustomTime && (
           <View style={styles.timeRow}>
             <View style={styles.timeCol}>
-              <Label>INÍCIO</Label>
+              <Label>INICIO</Label>
               <TouchableOpacity
                 style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, justifyContent: 'center' }]}
                 onPress={() => setPickerTarget('start')}
@@ -187,7 +221,7 @@ export default function AddScheduleScreen() {
           </View>
         )}
 
-        <Label mt>OBSERVAÇÕES</Label>
+        <Label mt>OBSERVACOES</Label>
         <TextInput
           style={[styles.input, styles.textarea, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
           placeholder="Ex: Chegar 30 min antes para passagem de som"
@@ -200,7 +234,7 @@ export default function AddScheduleScreen() {
         />
 
         <View style={{ marginTop: Spacing.xl }}>
-          <Button label="Adicionar à escala" onPress={handleSave} loading={loading} />
+          <Button label={hasSelectedParticipant ? 'Salvar escala' : 'Adicionar a escala'} onPress={handleSave} loading={loading} />
         </View>
       </ScrollView>
 
@@ -236,6 +270,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     ...Typography.body,
     minHeight: Layout.minTouchTarget,
+  },
+  selectedParticipantBox: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
   },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
   chip: { borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, marginRight: Spacing.xs },

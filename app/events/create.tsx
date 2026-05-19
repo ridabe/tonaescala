@@ -19,6 +19,7 @@ import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { analytics } from '@/lib/analytics';
 
 const CATEGORIES = ['Culto', 'Ensaio', 'Conferência', 'Reunião', 'Outro'];
 const EVENT_COLORS = ['#2563EB', '#0F766E', '#16A34A', '#D97706', '#DC2626', '#7C3AED'];
@@ -87,6 +88,7 @@ export default function CreateEventScreen() {
         end_date: toISOLocal(endDate),
       });
       await generateInvite(ev.id);
+      analytics.track('event_created', { event_id: ev.id, organization_id: org.id });
       router.replace(`/events/${ev.id}`);
     } catch (e: any) {
       Alert.alert('Erro ao criar evento', e.message);

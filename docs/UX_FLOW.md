@@ -99,6 +99,23 @@ Informação visível:
 4. Toca em participante para ver resposta.
 5. Pode reenviar lembrete.
 
+### 3.7 Escalar pessoa confirmada
+
+1. Abre evento.
+2. Acessa `Presencas`.
+3. Ve quem entrou pelo codigo e confirmou presenca.
+4. Toca em `Escalar` no participante confirmado.
+5. App abre a tela de escala com o participante ja selecionado.
+6. Organizador define equipe, funcao, horario e observacoes.
+7. Salva.
+8. Participante passa a aparecer como `Na escala`.
+
+Regra de produto:
+
+- Confirmar presenca significa que a pessoa aceitou participar do evento.
+- Estar na escala significa que o organizador atribuiu uma funcao/equipe para essa pessoa.
+- O participante criado pelo codigo deve ser reaproveitado na escala; o app nao deve criar outro cadastro para a mesma pessoa nesse caminho.
+
 ## 4. Jornada do participante
 
 ### 4.1 Entrar por código
@@ -212,4 +229,3 @@ Atalhos contextuais:
 
 - Botão flutuante ou ação no header para criar evento.
 - Ação de compartilhar dentro do detalhe do evento.
-
