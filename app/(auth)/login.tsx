@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
+import { QrCode } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
@@ -83,16 +84,24 @@ export default function LoginScreen() {
         {/* Entrada por código — sempre visível */}
         <View style={s.codeSection}>
           <Text style={[s.sectionLabel, { color: colors.textMuted }]}>Entrar em evento</Text>
-          <TextInput
-            style={[s.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-            placeholder="Código  TNE-XXXXXX"
-            placeholderTextColor={colors.textSoft}
-            value={inviteCode}
-            onChangeText={setInviteCode}
-            autoCapitalize="characters"
-            returnKeyType="go"
-            onSubmitEditing={handleEnterByCode}
-          />
+          <View style={s.codeRow}>
+            <TextInput
+              style={[s.input, s.codeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+              placeholder="Código  TNE-XXXXXX"
+              placeholderTextColor={colors.textSoft}
+              value={inviteCode}
+              onChangeText={setInviteCode}
+              autoCapitalize="characters"
+              returnKeyType="go"
+              onSubmitEditing={handleEnterByCode}
+            />
+            <TouchableOpacity
+              style={[s.qrBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => router.push('/scan-qr')}
+            >
+              <QrCode size={22} color={primary} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
             style={[s.btn, s.btnOutline, { borderColor: primary }]}
             onPress={handleEnterByCode}
@@ -198,6 +207,19 @@ const styles = (colors: ReturnType<typeof import('@/hooks/useColorScheme').useCo
       letterSpacing: 0.5,
     },
     codeSection: { marginBottom: Spacing.lg },
+    codeRow: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+    codeInput: { flex: 1 },
+    qrBtn: {
+      width: Layout.minTouchTarget,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+    },
     input: {
       borderWidth: 1,
       borderRadius: Radius.md,

@@ -12,7 +12,25 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('RN:', d.get\\('devDependencies',{}\\).get\\('react-native','?'\\)\\); print\\('React:', d.get\\('devDependencies',{}\\).get\\('react','?'\\)\\)\")",
       "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const j=JSON.parse\\(d\\); console.log\\('RN:',j.devDependencies?.['react-native'],'React:',j.devDependencies?.['react']\\)\")",
       "Bash(node -e \"const {execSync}=require\\('child_process'\\); console.log\\(execSync\\('npx expo install expo-constants expo-font expo-linking expo-secure-store expo-splash-screen expo-status-bar lucide-react-native --json 2>&1'\\).toString\\(\\)\\)\")",
-      "Bash(node -e \"const m = require\\('c:/Projetos/ToNaEscala/node_modules/expo/bundledNativeModules.json'\\); const pkgs=['expo-constants','expo-font','expo-linking','expo-secure-store','expo-splash-screen','expo-status-bar']; pkgs.forEach\\(p=>console.log\\(p+':', m[p]\\)\\)\")"
+      "Bash(node -e \"const m = require\\('c:/Projetos/ToNaEscala/node_modules/expo/bundledNativeModules.json'\\); const pkgs=['expo-constants','expo-font','expo-linking','expo-secure-store','expo-splash-screen','expo-status-bar']; pkgs.forEach\\(p=>console.log\\(p+':', m[p]\\)\\)\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Projetos\\\\ToNaEscala\\\\supabase\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Projetos\\\\ToNaEscala\" -Recurse -Directory)",
+      "Read(//c/Users/ridab/.claude/projects/c--Projetos-ToNaEscala/memory/**)",
+      "Bash(node -e \"const exports = Object.keys\\(require\\('./node_modules/expo-camera'\\)\\); console.log\\(exports.filter\\(e => e.toLowerCase\\(\\).includes\\('camera'\\) || e.toLowerCase\\(\\).includes\\('permission'\\) || e.toLowerCase\\(\\).includes\\('barcode'\\)\\).join\\('\\\\n'\\)\\);\")",
+      "Bash(grep -v \"//.*barcode\\\\|onBarcodeScanned\\\\|barcodeTypes.*\\\\[\\\\]\")",
+      "Bash(del \"c:\\\\Projetos\\\\ToNaEscala\\\\.npmrc\")",
+      "Bash(npm ls *)",
+      "Bash(dir node_modules)",
+      "Bash(findstr -i worklet)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('peerDeps:', d.get\\('peerDependencies',{}\\)\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('deps worklets:', d.get\\('dependencies',{}\\).get\\('react-native-worklets','N/A'\\)\\); print\\('peerDeps:', d.get\\('peerDependencies',{}\\)\\)\")",
+      "Bash(npm view *)",
+      "Bash(python -c \"import sys,json; versions=json.load\\(sys.stdin\\); v4=[v for v in versions if v.startswith\\('4.'\\)]; print\\('\\\\n'.join\\(v4[-10:]\\)\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('worklets peer:', d.get\\('peerDependencies',{}\\).get\\('react-native-worklets','N/A'\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"
     ]
   }
 }

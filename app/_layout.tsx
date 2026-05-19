@@ -20,6 +20,11 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="setup-organization" />
+        <Stack.Screen name="events" />
+        <Stack.Screen name="enter-event" />
+        <Stack.Screen name="scan-qr" />
+        <Stack.Screen name="schedule" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </GestureHandlerRootView>

@@ -1,15 +1,17 @@
 import { Redirect, Tabs } from 'expo-router';
 import { CalendarDays, CalendarPlus, Bell, CircleUserRound } from 'lucide-react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useSession } from '@/hooks/useSession';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
-import { ActivityIndicator, View } from 'react-native';
 
 export default function TabsLayout() {
-  const { session, loading } = useSession();
+  const { session, loading: sessionLoading } = useSession();
+  const { org, loading: orgLoading } = useOrganization();
   const { colors } = useColorScheme();
 
-  if (loading) {
+  if (sessionLoading || (session && orgLoading)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator color={Colors.brand.primary} />
@@ -17,9 +19,8 @@ export default function TabsLayout() {
     );
   }
 
-  if (!session) {
-    return <Redirect href="/(auth)/login" />;
-  }
+  if (!session) return <Redirect href="/(auth)/login" />;
+  if (!org) return <Redirect href="/setup-organization" />;
 
   return (
     <Tabs
@@ -32,10 +33,7 @@ export default function TabsLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
       }}
     >
       <Tabs.Screen
