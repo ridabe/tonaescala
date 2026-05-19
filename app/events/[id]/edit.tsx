@@ -18,14 +18,11 @@ import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { toDatabaseTimestamp } from '@/lib/datetime';
 
 const CATEGORIES = ['Culto', 'Ensaio', 'Conferência', 'Reunião', 'Outro'];
 const EVENT_COLORS = ['#2563EB', '#0F766E', '#16A34A', '#D97706', '#DC2626', '#7C3AED'];
 
-function pad(n: number) { return String(n).padStart(2, '0'); }
-function toISOLocal(d: Date) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
-}
 function displayDate(d: Date) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
@@ -94,8 +91,8 @@ export default function EditEventScreen() {
         location: location.trim() || undefined,
         description: description.trim() || undefined,
         color,
-        start_date: toISOLocal(startDate),
-        end_date: toISOLocal(endDate),
+        start_date: toDatabaseTimestamp(startDate),
+        end_date: toDatabaseTimestamp(endDate),
       });
       router.back();
     } catch (e: any) {
@@ -112,7 +109,7 @@ export default function EditEventScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScreenHeader title="Editar evento" />
+      <ScreenHeader title="Editar evento" fallbackHref={`/events/${id}`} />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Label>TÍTULO *</Label>

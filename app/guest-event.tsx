@@ -8,18 +8,20 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  TextInput,
 } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
-import { CalendarDays, MapPin, Clock, Check, X, LogOut, ClipboardList } from 'lucide-react-native';
+import { CalendarDays, MapPin, Clock, Check, X, LogOut, Users } from 'lucide-react-native';
 import {
-  getParticipantAgenda,
-  getParticipantEventDetails,
-  setEventAttendance,
-  confirmSchedule,
-  type EventDetailRow,
-} from '@/lib/participants';
-import { getPublicEventByInviteCode } from '@/lib/events';
+  getAssignmentRosterByGuestEventEmail,
+  getAssignmentsByGuestEventEmail,
+  getGuestEventsByInviteEmail,
+  respondGuestEventAssignment,
+  type AssignmentRosterItem,
+  type GuestAssignment,
+  type GuestEventSummary,
+} from '@/lib/assignments';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
@@ -29,18 +31,18 @@ import { ErrorState } from '@/components/ErrorState';
 import { SkeletonList } from '@/components/SkeletonBlock';
 import { reportError } from '@/lib/errorReporting';
 import { analytics } from '@/lib/analytics';
+import { appStorage } from '@/lib/storage';
+import { clearGuestAssignmentSession } from '@/hooks/useGuestAssignmentSession';
 
-type AttendanceStatus = 'pending' | 'confirmed' | 'declined';
-
-const SCHED_LABEL: Record<string, string> = {
-  confirmed: 'Confirmado',
+const RESPONSE_LABEL: Record<string, string> = {
+  pending: 'Pendente',
+  accepted: 'Aceito',
   declined: 'Recusado',
-  late: 'Atrasarei',
 };
-const SCHED_COLOR: Record<string, string> = {
-  confirmed: Colors.status.success,
+const RESPONSE_COLOR: Record<string, string> = {
+  pending: Colors.status.warning,
+  accepted: Colors.status.success,
   declined: Colors.status.danger,
-  late: Colors.status.warning,
 };
 
 function formatDate(iso: string) {
@@ -52,150 +54,64 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-type EventInfo = {
-  event_id: string;
-  event_title: string;
-  event_description: string | null;
-  event_location: string | null;
-  event_start_date: string;
-  event_end_date: string | null;
-  event_color: string;
-  organization_name: string;
-  attendance_status: AttendanceStatus;
-};
-
-type ScheduleItem = {
-  schedule_id: string;
-  team_name: string | null;
-  role: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  notes: string | null;
-  confirmation_status: string | null;
-};
-
 export default function GuestEventScreen() {
   const { colors } = useColorScheme();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
-  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
-  const [creds, setCreds] = useState<{ pid: string; token: string; eid: string } | null>(null);
-  const [legacyDatabaseMode, setLegacyDatabaseMode] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [guestEvents, setGuestEvents] = useState<GuestEventSummary[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [assignments, setAssignments] = useState<GuestAssignment[]>([]);
+  const [roster, setRoster] = useState<AssignmentRosterItem[]>([]);
+  const [session, setSession] = useState<{ inviteCode: string; email: string } | null>(null);
+  const [declineTarget, setDeclineTarget] = useState<GuestAssignment | null>(null);
+  const [declineReason, setDeclineReason] = useState('');
 
-  const load = useCallback(async (showLoader = true) => {
+  const load = useCallback(async (showLoader = true, eventId?: string | null) => {
     if (showLoader) setLoading(true);
+    setLoadError(null);
     try {
-      const pid = await SecureStore.getItemAsync('participant_id');
-      const tok = await SecureStore.getItemAsync('participant_access_token');
-      const eid = await SecureStore.getItemAsync('participant_event_id');
-      const inviteCode = await SecureStore.getItemAsync('participant_invite_code');
+      const inviteCode = await appStorage.getItem('assignment_invite_code');
+      const email = await appStorage.getItem('assignment_email');
 
-      if (!pid || !tok || !eid) {
+      if (!inviteCode || !email) {
         router.replace('/(auth)/login');
         return;
       }
 
-      setCreds({ pid, token: tok, eid });
+      setSession({ inviteCode, email });
+      const events = await getGuestEventsByInviteEmail(inviteCode, email);
 
-      let rows: EventDetailRow[];
-      try {
-        rows = await getParticipantEventDetails(pid, tok, eid);
-        setLegacyDatabaseMode(false);
-      } catch (err) {
-        if (!isMissingRpcError(err)) throw err;
-        if (!inviteCode) {
-          await clearSession();
-          return;
-        }
-
-        const publicEvent = await getPublicEventByInviteCode(inviteCode);
-        const agenda = await getParticipantAgenda(pid, tok).catch((agendaErr) => {
-          if (isMissingRpcError(agendaErr)) return [];
-          throw agendaErr;
-        });
-
-        if (!publicEvent) {
-          rows = [];
-        } else {
-          const eventAgenda = agenda.filter((item) => item.event_id === publicEvent.event_id);
-          rows = eventAgenda.length > 0
-            ? eventAgenda.map((item) => ({
-                event_id: publicEvent.event_id,
-                event_title: publicEvent.title,
-                event_description: null,
-                event_location: publicEvent.location,
-                event_start_date: publicEvent.start_date,
-                event_end_date: publicEvent.end_date,
-                event_color: Colors.brand.primary,
-                organization_name: publicEvent.organization_name,
-                attendance_status: 'pending',
-                schedule_id: item.schedule_id,
-                team_name: item.team_name,
-                role: item.role,
-                start_time: item.start_time,
-                end_time: item.end_time,
-                notes: item.notes,
-                confirmation_status: item.confirmation_status,
-              }))
-            : [{
-                event_id: publicEvent.event_id,
-                event_title: publicEvent.title,
-                event_description: null,
-                event_location: publicEvent.location,
-                event_start_date: publicEvent.start_date,
-                event_end_date: publicEvent.end_date,
-                event_color: Colors.brand.primary,
-                organization_name: publicEvent.organization_name,
-                attendance_status: 'pending',
-                schedule_id: null,
-                team_name: null,
-                role: null,
-                start_time: null,
-                end_time: null,
-                notes: null,
-                confirmation_status: null,
-              }];
-          setLegacyDatabaseMode(true);
-        }
-      }
-      if (rows.length === 0) {
-        Alert.alert('Evento não encontrado', 'O evento pode ter sido encerrado.');
-        await clearSession();
+      if (events.length === 0) {
+        Alert.alert('Convocacao nao encontrada', 'Este email nao esta convocado para este evento.');
+        await clearSessionAndLeave();
         return;
       }
 
-      const first = rows[0];
-      setEventInfo({
-        event_id: first.event_id,
-        event_title: first.event_title,
-        event_description: first.event_description,
-        event_location: first.event_location,
-        event_start_date: first.event_start_date,
-        event_end_date: first.event_end_date,
-        event_color: first.event_color,
-        organization_name: first.organization_name,
-        attendance_status: first.attendance_status as AttendanceStatus,
-      });
+      const targetEventId =
+        eventId ??
+        events.find((item) => item.is_current_invite)?.event_id ??
+        events[0].event_id;
 
-      setSchedules(
-        rows
-          .filter((r) => r.schedule_id !== null)
-          .map((r) => ({
-            schedule_id: r.schedule_id!,
-            team_name: r.team_name,
-            role: r.role,
-            start_time: r.start_time,
-            end_time: r.end_time,
-            notes: r.notes,
-            confirmation_status: r.confirmation_status,
-          })),
-      );
+      const [items, rosterItems] = await Promise.all([
+        getAssignmentsByGuestEventEmail(inviteCode, email, targetEventId),
+        getAssignmentRosterByGuestEventEmail(inviteCode, email, targetEventId),
+      ]);
+
+      if (items.length === 0) {
+        Alert.alert('Convocacao nao encontrada', 'Este email nao esta convocado para este evento.');
+        await clearSessionAndLeave();
+        return;
+      }
+
+      setGuestEvents(events);
+      setSelectedEventId(targetEventId);
+      setAssignments(items);
+      setRoster(rosterItems);
     } catch (err) {
       reportError(err, { context: 'GuestEventScreen.load' });
-      setLoadError('Não foi possível carregar o evento. Verifique sua conexão.');
+      setLoadError('Nao foi possivel carregar sua convocacao. Confira o codigo e email.');
     } finally {
       setLoading(false);
     }
@@ -205,72 +121,86 @@ export default function GuestEventScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await load(false);
+    await load(false, selectedEventId);
     setRefreshing(false);
-  }, [load]);
+  }, [load, selectedEventId]);
 
-  async function clearSession() {
-    await SecureStore.deleteItemAsync('participant_id');
-    await SecureStore.deleteItemAsync('participant_access_token');
-    await SecureStore.deleteItemAsync('participant_event_id');
-    await SecureStore.deleteItemAsync('participant_invite_code');
+  async function clearSessionAndLeave() {
+    await clearGuestAssignmentSession();
+    await appStorage.removeItem('participant_id');
+    await appStorage.removeItem('participant_access_token');
+    await appStorage.removeItem('participant_event_id');
+    await appStorage.removeItem('participant_invite_code');
     router.replace('/(auth)/login');
   }
 
-  async function handleAttendance(status: 'confirmed' | 'declined') {
-    if (!creds) return;
-    if (legacyDatabaseMode) {
-      Alert.alert(
-        'Banco pendente',
-        'A confirmaÃ§Ã£o de presenÃ§a no evento exige aplicar as migrations mais recentes do Supabase.',
-      );
-      return;
-    }
-    setSaving(true);
+  async function handleAccept(assignment: GuestAssignment) {
+    if (!session) return;
+    setSavingId(assignment.assignment_id);
     try {
-      await setEventAttendance(creds.pid, creds.token, creds.eid, status);
-      analytics.track(status === 'confirmed' ? 'attendance_confirmed' : 'attendance_declined', {
-        event_id: creds.eid,
-      });
-      setEventInfo((prev) => prev ? { ...prev, attendance_status: status } : prev);
+      await respondGuestEventAssignment(session.inviteCode, session.email, assignment.assignment_id, 'accepted');
+      analytics.track('assignment_accepted', { event_id: assignment.event_id, assignment_id: assignment.assignment_id });
+      await load(false, assignment.event_id);
     } catch (e: any) {
-      Alert.alert('Erro', e.message ?? 'Não foi possível salvar.');
+      Alert.alert('Erro', e.message ?? 'Nao foi possivel salvar sua resposta.');
     } finally {
-      setSaving(false);
+      setSavingId(null);
     }
   }
 
-  async function handleConfirmSchedule(scheduleId: string, current: string | null, idx: number) {
-    if (!creds) return;
-    const next = current === 'confirmed' ? 'declined' : 'confirmed';
+  async function handleSubmitDecline() {
+    if (!session || !declineTarget) return;
+    if (!declineReason.trim()) {
+      Alert.alert('Justificativa obrigatoria', 'Informe o motivo da recusa.');
+      return;
+    }
+    setSavingId(declineTarget.assignment_id);
     try {
-      await confirmSchedule(scheduleId, creds.pid, creds.token, next as any);
-      analytics.track('schedule_confirmed', { schedule_id: scheduleId, status: next });
-      setSchedules((prev) =>
-        prev.map((s, i) => i === idx ? { ...s, confirmation_status: next } : s),
+      await respondGuestEventAssignment(
+        session.inviteCode,
+        session.email,
+        declineTarget.assignment_id,
+        'declined',
+        declineReason.trim(),
       );
+      analytics.track('assignment_declined', {
+        event_id: declineTarget.event_id,
+        assignment_id: declineTarget.assignment_id,
+      });
+      setDeclineTarget(null);
+      setDeclineReason('');
+      await load(false, declineTarget.event_id);
     } catch (e: any) {
-      Alert.alert('Erro', e.message ?? 'Não foi possível confirmar.');
+      Alert.alert('Erro', e.message ?? 'Nao foi possivel salvar sua resposta.');
+    } finally {
+      setSavingId(null);
     }
   }
 
   function handleLeave() {
     Alert.alert(
       'Sair do evento',
-      'Você sairá desta visualização. Para voltar, use o código de convite.',
+      'Para voltar, use novamente o codigo do evento e seu email.',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: clearSession },
+        { text: 'Sair', style: 'destructive', onPress: clearSessionAndLeave },
       ],
     );
   }
 
+  async function handleSelectEvent(eventId: string) {
+    if (eventId === selectedEventId) return;
+    setSelectedEventId(eventId);
+    await load(false, eventId);
+  }
+
   const primary = Colors.brand.primary;
+  const eventInfo = assignments[0];
 
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={[styles.header, { backgroundColor: Colors.brand.primary, borderBottomColor: Colors.brand.primaryPressed }]}>
           <View style={{ flex: 1 }}>
             <SkeletonList count={1} />
           </View>
@@ -284,25 +214,21 @@ export default function GuestEventScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ErrorState
-          message={loadError ?? 'Evento não encontrado.'}
+          message={loadError ?? 'Convocacao nao encontrada.'}
           onRetry={() => load()}
         />
       </View>
     );
   }
 
-  const isConfirmed = eventInfo.attendance_status === 'confirmed';
-  const isDeclined = eventInfo.attendance_status === 'declined';
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: Colors.brand.primary, borderBottomColor: Colors.brand.primaryPressed }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[Typography.titleMd, { color: colors.text }]} numberOfLines={1}>
+          <Text style={[Typography.titleMd, { color: '#FFFFFF' }]} numberOfLines={1}>
             {eventInfo.event_title}
           </Text>
-          <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+          <Text style={[Typography.caption, { color: Colors.brand.primarySoft }]} numberOfLines={1}>
             {eventInfo.organization_name}
           </Text>
         </View>
@@ -313,24 +239,61 @@ export default function GuestEventScreen() {
           accessibilityRole="button"
           accessibilityLabel="Sair do evento"
         >
-          <LogOut size={20} color={Colors.status.danger} strokeWidth={2} />
+          <LogOut size={20} color="#FFFFFF" strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
-      {/* Color accent bar */}
       <View style={[styles.accentBar, { backgroundColor: eventInfo.event_color }]} />
 
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
       >
-        {/* Event info */}
+        {guestEvents.length > 1 ? (
+          <View>
+            <Text style={[Typography.caption, styles.sectionLabel, { color: colors.textMuted }]}>
+              EVENTOS DESTE EMAIL
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.eventSwitcher}>
+              {guestEvents.map((item) => {
+                const selected = item.event_id === selectedEventId;
+                return (
+                  <TouchableOpacity
+                    key={item.event_id}
+                    style={[
+                      styles.eventChip,
+                      {
+                        backgroundColor: selected ? item.event_color + '18' : colors.surface,
+                        borderColor: selected ? item.event_color : colors.border,
+                      },
+                    ]}
+                    onPress={() => handleSelectEvent(item.event_id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`Abrir evento ${item.event_title}`}
+                  >
+                    <Text style={[Typography.bodyStrong, { color: selected ? item.event_color : colors.text }]} numberOfLines={1}>
+                      {item.event_title}
+                    </Text>
+                    <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+                      {formatDate(item.event_start_date)}
+                    </Text>
+                    <Text style={[Typography.micro, { color: colors.textMuted }]}>
+                      {item.assignment_count} convocacao{item.assignment_count === 1 ? '' : 'es'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <Card>
           <View style={styles.infoRows}>
             <InfoRow icon={CalendarDays} value={formatDate(eventInfo.event_start_date)} colors={colors} />
             <InfoRow
               icon={Clock}
-              value={`${formatTime(eventInfo.event_start_date)}${eventInfo.event_end_date ? ` – ${formatTime(eventInfo.event_end_date)}` : ''}`}
+              value={`${formatTime(eventInfo.event_start_date)}${eventInfo.event_end_date ? ` ate ${formatTime(eventInfo.event_end_date)}` : ''}`}
               colors={colors}
             />
             {eventInfo.event_location ? (
@@ -344,129 +307,166 @@ export default function GuestEventScreen() {
           ) : null}
         </Card>
 
-        {/* Attendance confirmation */}
         <View>
           <Text style={[Typography.caption, styles.sectionLabel, { color: colors.textMuted }]}>
-            CONFIRMAÇÃO DE PRESENÇA
+            SUAS CONVOCACOES
           </Text>
-          {legacyDatabaseMode ? (
-            <View style={[styles.alertBox, { backgroundColor: Colors.status.warningSoft, borderColor: Colors.status.warning }]}>
-              <Text style={[Typography.caption, { color: Colors.status.warning }]}>
-                Banco com migrations pendentes. Você pode visualizar o evento e confirmar escalas, mas a presença do evento fica indisponível neste modo.
-              </Text>
-            </View>
-          ) : null}
-          <View style={styles.attendanceRow}>
-            <TouchableOpacity
-              style={[
-                styles.attendBtn,
-                {
-                  backgroundColor: isConfirmed ? Colors.status.success : colors.surface,
-                  borderColor: isConfirmed ? Colors.status.success : colors.border,
-                },
-              ]}
-              onPress={() => handleAttendance('confirmed')}
-              disabled={saving}
-              accessibilityRole="button"
-              accessibilityLabel="Confirmar presença"
-              accessibilityState={{ selected: isConfirmed, disabled: saving }}
-            >
-              <Check size={18} color={isConfirmed ? '#FFF' : Colors.status.success} strokeWidth={2.5} />
-              <Text style={[Typography.bodyStrong, { color: isConfirmed ? '#FFF' : Colors.status.success, marginLeft: 6 }]}>
-                Estarei lá
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.attendBtn,
-                {
-                  backgroundColor: isDeclined ? Colors.status.danger : colors.surface,
-                  borderColor: isDeclined ? Colors.status.danger : colors.border,
-                },
-              ]}
-              onPress={() => handleAttendance('declined')}
-              disabled={saving}
-              accessibilityRole="button"
-              accessibilityLabel="Recusar presença"
-              accessibilityState={{ selected: isDeclined, disabled: saving }}
-            >
-              <X size={18} color={isDeclined ? '#FFF' : Colors.status.danger} strokeWidth={2.5} />
-              <Text style={[Typography.bodyStrong, { color: isDeclined ? '#FFF' : Colors.status.danger, marginLeft: 6 }]}>
-                Não poderei
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {saving && <ActivityIndicator color={primary} style={{ marginTop: Spacing.sm }} />}
-        </View>
-
-        {/* Schedules */}
-        <View>
-          <Text style={[Typography.caption, styles.sectionLabel, { color: colors.textMuted }]}>
-            SUAS ESCALAS
-          </Text>
-          {schedules.length === 0 ? (
-            <EmptyState
-              icon={ClipboardList}
-              title="Sem escala ainda"
-              subtitle="O organizador adicionará você a uma escala em breve."
-            />
-          ) : (
-            schedules.map((s, idx) => (
-              <View key={s.schedule_id} style={{ marginBottom: Spacing.sm }}>
-                <Card>
-                  <View style={styles.schedRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[Typography.bodyStrong, { color: colors.text }]}>
-                        {s.team_name ?? 'Geral'}{s.role ? ` · ${s.role}` : ''}
-                      </Text>
-                      {s.start_time && (
-                        <Text style={[Typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
-                          {formatTime(s.start_time)}{s.end_time ? ` – ${formatTime(s.end_time)}` : ''}
+          {assignments.map((assignment) => {
+            const statusColor = RESPONSE_COLOR[assignment.response_status] ?? colors.textMuted;
+            const isSaving = savingId === assignment.assignment_id;
+            return (
+              <View key={assignment.assignment_id} style={{ marginBottom: Spacing.sm }}>
+                <Card leftAccent={statusColor}>
+                  <View style={{ gap: Spacing.sm }}>
+                    <View style={styles.assignmentHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                          {assignment.team_name ?? 'Equipe geral'}{assignment.role ? ` - ${assignment.role}` : ''}
                         </Text>
-                      )}
-                      {s.notes ? (
-                        <Text style={[Typography.caption, { color: colors.textSoft, marginTop: 2 }]}>
-                          {s.notes}
+                        <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                          {assignment.invitee_name}
                         </Text>
-                      ) : null}
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+                        <Text style={[Typography.micro, { color: statusColor }]}>
+                          {RESPONSE_LABEL[assignment.response_status] ?? 'Pendente'}
+                        </Text>
+                      </View>
                     </View>
-                    <TouchableOpacity
-                      style={[
-                        styles.schedStatus,
-                        {
-                          backgroundColor: s.confirmation_status
-                            ? SCHED_COLOR[s.confirmation_status] + '22'
-                            : colors.border,
-                        },
-                      ]}
-                      onPress={() => handleConfirmSchedule(s.schedule_id, s.confirmation_status, idx)}
-                    >
-                      <Text
+
+                    {assignment.arrival_time || assignment.start_time ? (
+                      <InfoRow
+                        icon={Clock}
+                        value={`Chegada: ${formatTime(assignment.arrival_time ?? assignment.start_time!)}${assignment.end_time ? ` ate ${formatTime(assignment.end_time)}` : ''}`}
+                        colors={colors}
+                      />
+                    ) : null}
+                    {assignment.notes ? (
+                      <Text style={[Typography.body, { color: colors.textMuted }]}>
+                        {assignment.notes}
+                      </Text>
+                    ) : null}
+                    {assignment.decline_reason ? (
+                      <Text style={[Typography.caption, { color: Colors.status.danger }]}>
+                        Motivo enviado: {assignment.decline_reason}
+                      </Text>
+                    ) : null}
+
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
                         style={[
-                          Typography.micro,
+                          styles.responseBtn,
                           {
-                            color: s.confirmation_status
-                              ? SCHED_COLOR[s.confirmation_status]
-                              : colors.textMuted,
+                            backgroundColor: assignment.response_status === 'accepted' ? Colors.status.success : colors.surface,
+                            borderColor: Colors.status.success,
                           },
                         ]}
+                        onPress={() => handleAccept(assignment)}
+                        disabled={isSaving}
                       >
-                        {s.confirmation_status ? SCHED_LABEL[s.confirmation_status] : 'Pendente'}
-                      </Text>
-                    </TouchableOpacity>
+                        {isSaving ? (
+                          <ActivityIndicator color={assignment.response_status === 'accepted' ? '#FFF' : Colors.status.success} />
+                        ) : (
+                          <>
+                            <Check size={18} color={assignment.response_status === 'accepted' ? '#FFF' : Colors.status.success} strokeWidth={2.5} />
+                            <Text style={[Typography.bodyStrong, { color: assignment.response_status === 'accepted' ? '#FFF' : Colors.status.success, marginLeft: 6 }]}>
+                              Aceito
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.responseBtn,
+                          {
+                            backgroundColor: assignment.response_status === 'declined' ? Colors.status.danger : colors.surface,
+                            borderColor: Colors.status.danger,
+                          },
+                        ]}
+                        onPress={() => { setDeclineTarget(assignment); setDeclineReason(''); }}
+                        disabled={isSaving}
+                      >
+                        <X size={18} color={assignment.response_status === 'declined' ? '#FFF' : Colors.status.danger} strokeWidth={2.5} />
+                        <Text style={[Typography.bodyStrong, { color: assignment.response_status === 'declined' ? '#FFF' : Colors.status.danger, marginLeft: 6 }]}>
+                          Nao poderei
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </Card>
               </View>
-            ))
-          )}
-          {schedules.length > 0 && (
-            <Text style={[Typography.caption, { color: colors.textSoft, marginTop: Spacing.xs }]}>
-              Toque no status para confirmar ou recusar sua escala.
-            </Text>
+            );
+          })}
+        </View>
+
+        <View>
+          <Text style={[Typography.caption, styles.sectionLabel, { color: colors.textMuted }]}>
+            EQUIPE CONVOCADA
+          </Text>
+          {roster.length === 0 ? (
+            <EmptyState icon={Users} title="Equipe nao disponivel" subtitle="Ainda nao ha outros convocados visiveis." />
+          ) : (
+            roster.map((item) => {
+              const statusColor = RESPONSE_COLOR[item.response_status] ?? colors.textMuted;
+              return (
+                <View key={item.assignment_id} style={{ marginBottom: Spacing.sm }}>
+                  <Card>
+                    <View style={styles.rosterRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                          {item.invitee_name}{item.is_current_user ? ' - voce' : ''}
+                        </Text>
+                        <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                          {item.team_name ?? 'Equipe geral'}{item.role ? ` - ${item.role}` : ''}
+                        </Text>
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+                        <Text style={[Typography.micro, { color: statusColor }]}>
+                          {RESPONSE_LABEL[item.response_status] ?? 'Pendente'}
+                        </Text>
+                      </View>
+                    </View>
+                  </Card>
+                </View>
+              );
+            })
           )}
         </View>
       </ScrollView>
+
+      <Modal transparent visible={Boolean(declineTarget)} animationType="slide" onRequestClose={() => setDeclineTarget(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.sheetBox, { backgroundColor: colors.surface }]}>
+            <Text style={[Typography.titleSm, { color: colors.text }]}>Nao poderei participar</Text>
+            <Text style={[Typography.caption, { color: colors.textMuted, marginTop: Spacing.xs }]}>
+              Informe o motivo para que o organizador possa ajustar a escala.
+            </Text>
+            <TextInput
+              style={[styles.textarea, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
+              placeholder="Ex: estarei trabalhando neste horario"
+              placeholderTextColor={colors.textSoft}
+              value={declineReason}
+              onChangeText={setDeclineReason}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <View style={{ flex: 1 }}>
+                <TouchableOpacity style={[styles.modalBtn, { borderColor: colors.border }]} onPress={() => setDeclineTarget(null)}>
+                  <Text style={[Typography.bodyStrong, { color: colors.textMuted }]}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 1 }}>
+                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: Colors.status.danger, borderColor: Colors.status.danger }]} onPress={handleSubmitDecline}>
+                  {savingId ? <ActivityIndicator color="#FFF" /> : <Text style={[Typography.bodyStrong, { color: '#FFF' }]}>Enviar recusa</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -482,15 +482,8 @@ function InfoRow({ icon: Icon, value, colors }: { icon: any; value: string; colo
   );
 }
 
-function isMissingRpcError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const maybe = error as { code?: string; message?: string };
-  return maybe.code === '42883' || maybe.message?.includes('Could not find the function') === true;
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -502,6 +495,18 @@ const styles = StyleSheet.create({
   leaveBtn: { marginLeft: Spacing.md },
   accentBar: { height: 4 },
   content: { padding: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg },
+  eventSwitcher: {
+    gap: Spacing.sm,
+    paddingBottom: Spacing.xs,
+  },
+  eventChip: {
+    width: 220,
+    minHeight: 96,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    justifyContent: 'center',
+  },
   infoRows: { gap: Spacing.sm },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start' },
   sectionLabel: {
@@ -509,14 +514,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: Spacing.sm,
   },
-  alertBox: {
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
+  assignmentHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
   },
-  attendanceRow: { flexDirection: 'row', gap: Spacing.sm },
-  attendBtn: {
+  actionRow: { flexDirection: 'row', gap: Spacing.sm },
+  responseBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -526,10 +531,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
   },
-  schedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  schedStatus: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
+  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+    padding: Spacing.lg,
+  },
+  sheetBox: {
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+  },
+  textarea: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    ...Typography.body,
+    minHeight: 110,
+    marginTop: Spacing.md,
+  },
+  modalActions: {
+    marginTop: Spacing.md,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  modalBtn: {
+    minHeight: Layout.minTouchTarget,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

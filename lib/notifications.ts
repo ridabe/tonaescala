@@ -10,6 +10,31 @@ export type AppNotification = {
   created_at: string;
 };
 
+export type AdminNotification = {
+  id: string;
+  event_id: string | null;
+  assignment_id: string | null;
+  type: 'assignment_accepted' | 'assignment_declined';
+  title: string;
+  body: string | null;
+  data: Record<string, unknown> | null;
+  read: boolean;
+  created_at: string;
+};
+
+export async function getAdminNotifications(): Promise<AdminNotification[]> {
+  const { data, error } = await supabase.rpc('get_admin_notifications');
+  if (error) throw error;
+  return (data as AdminNotification[]) ?? [];
+}
+
+export async function markAdminNotificationRead(notificationId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_admin_notification_read', {
+    p_notification_id: notificationId,
+  });
+  if (error) throw error;
+}
+
 export async function getParticipantNotifications(
   participantId: string,
   token: string,

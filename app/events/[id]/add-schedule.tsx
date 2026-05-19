@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { createParticipantAsOrganizer, createSchedule } from '@/lib/schedules';
+import { createEventAssignment } from '@/lib/assignments';
 import { fetchTeams } from '@/lib/teams';
 import type { Team } from '@/lib/types';
 import { useOrganization } from '@/hooks/useOrganization';
@@ -22,11 +22,8 @@ import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { analytics } from '@/lib/analytics';
+import { toDatabaseTimestamp } from '@/lib/datetime';
 
-function pad(n: number) { return String(n).padStart(2, '0'); }
-function toISOLocal(d: Date) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
-}
 function displayTime(d: Date) {
   return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
@@ -45,15 +42,14 @@ export default function AddScheduleScreen() {
     participant_phone?: string;
   }>();
   const id = readParam(params.id);
-  const existingParticipantId = readParam(params.participant_id);
   const existingParticipantName = readParam(params.participant_name) ?? '';
   const existingParticipantPhone = readParam(params.participant_phone) ?? '';
-  const hasSelectedParticipant = Boolean(existingParticipantId);
   const { org } = useOrganization();
   const { colors } = useColorScheme();
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [name, setName] = useState(existingParticipantName);
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState(existingParticipantPhone);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [role, setRole] = useState('');
@@ -83,25 +79,30 @@ export default function AddScheduleScreen() {
   }
 
   async function handleSave() {
-    if (!hasSelectedParticipant && !name.trim()) {
-      Alert.alert('Nome obrigatorio', 'Informe o nome do participante.');
+    if (!name.trim()) {
+      Alert.alert('Nome obrigatorio', 'Informe o nome do convocado.');
+      return;
+    }
+    if (!email.trim()) {
+      Alert.alert('Email obrigatorio', 'Informe o email que o convidado usara para acessar a convocacao.');
       return;
     }
     if (!id) return;
     setLoading(true);
     try {
-      const participantId = existingParticipantId
-        ?? await createParticipantAsOrganizer(name.trim(), phone.trim() || undefined);
-      await createSchedule({
-        event_id: id,
-        participant_id: participantId,
-        team_id: selectedTeam || undefined,
+      const assignmentId = await createEventAssignment({
+        eventId: id,
+        teamId: selectedTeam || undefined,
+        inviteeName: name.trim(),
+        inviteeEmail: email.trim(),
+        inviteePhone: phone.trim() || undefined,
         role: role.trim() || undefined,
         notes: notes.trim() || undefined,
-        start_time: useCustomTime ? toISOLocal(startTime) : undefined,
-        end_time: useCustomTime ? toISOLocal(endTime) : undefined,
+        arrivalTime: useCustomTime ? toDatabaseTimestamp(startTime) : undefined,
+        startTime: useCustomTime ? toDatabaseTimestamp(startTime) : undefined,
+        endTime: useCustomTime ? toDatabaseTimestamp(endTime) : undefined,
       });
-      analytics.track('schedule_created', { event_id: id, participant_id: participantId });
+      analytics.track('assignment_created', { event_id: id, assignment_id: assignmentId });
       router.back();
     } catch (e: any) {
       Alert.alert('Erro', e.message);
@@ -117,44 +118,40 @@ export default function AddScheduleScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScreenHeader title={hasSelectedParticipant ? 'Escalar participante' : 'Adicionar a escala'} />
+      <ScreenHeader title="Adicionar convocado" fallbackHref={`/events/${id}`} />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {hasSelectedParticipant ? (
-          <View style={[styles.selectedParticipantBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[Typography.caption, { color: colors.textMuted }]}>PARTICIPANTE CONFIRMADO</Text>
-            <Text style={[Typography.bodyStrong, { color: colors.text, marginTop: 4 }]}>
-              {existingParticipantName || 'Participante'}
-            </Text>
-            {existingParticipantPhone ? (
-              <Text style={[Typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
-                {existingParticipantPhone}
-              </Text>
-            ) : null}
-          </View>
-        ) : (
-          <>
-            <Label>NOME DO PARTICIPANTE *</Label>
-            <TextInput
-              style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-              placeholder="Ex: Alexandre Silva"
-              placeholderTextColor={colors.textSoft}
-              value={name}
-              onChangeText={setName}
-              autoFocus
-            />
+        <Label>NOME DO CONVOCADO *</Label>
+        <TextInput
+          style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+          placeholder="Ex: Alexandre Silva"
+          placeholderTextColor={colors.textSoft}
+          value={name}
+          onChangeText={setName}
+          autoFocus
+        />
 
-            <Label mt>TELEFONE</Label>
-            <TextInput
-              style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-              placeholder="+55 11 99999-9999"
-              placeholderTextColor={colors.textSoft}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
-          </>
-        )}
+        <Label mt>EMAIL *</Label>
+        <TextInput
+          style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+          placeholder="alexandre@email.com"
+          placeholderTextColor={colors.textSoft}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        <Label mt>TELEFONE</Label>
+        <TextInput
+          style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+          placeholder="+55 11 99999-9999"
+          placeholderTextColor={colors.textSoft}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
 
         {teams.length > 0 && (
           <>
@@ -194,7 +191,7 @@ export default function AddScheduleScreen() {
         >
           <View style={[styles.checkbox, { borderColor: useCustomTime ? primary : colors.border, backgroundColor: useCustomTime ? primary : 'transparent' }]} />
           <Text style={[Typography.body, { color: colors.text, marginLeft: Spacing.sm }]}>
-            Horario diferente do evento
+            Horario especifico para esta convocacao
           </Text>
         </TouchableOpacity>
 
@@ -234,7 +231,7 @@ export default function AddScheduleScreen() {
         />
 
         <View style={{ marginTop: Spacing.xl }}>
-          <Button label={hasSelectedParticipant ? 'Salvar escala' : 'Adicionar a escala'} onPress={handleSave} loading={loading} />
+          <Button label="Salvar convocacao" onPress={handleSave} loading={loading} />
         </View>
       </ScrollView>
 
@@ -270,12 +267,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     ...Typography.body,
     minHeight: Layout.minTouchTarget,
-  },
-  selectedParticipantBox: {
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
   },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
   chip: { borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, marginRight: Spacing.xs },

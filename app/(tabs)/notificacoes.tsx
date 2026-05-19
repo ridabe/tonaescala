@@ -7,11 +7,28 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Bell, BellOff, AlertTriangle, CalendarPlus, Calendar, XCircle } from 'lucide-react-native';
-import { getParticipantNotifications, markNotificationRead, type AppNotification } from '@/lib/notifications';
+import { router } from 'expo-router';
+import {
+  AlertTriangle,
+  Bell,
+  BellOff,
+  Calendar,
+  CalendarPlus,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react-native';
+import {
+  getAdminNotifications,
+  getParticipantNotifications,
+  markAdminNotificationRead,
+  markNotificationRead,
+  type AdminNotification,
+  type AppNotification,
+} from '@/lib/notifications';
 import { reportError } from '@/lib/errorReporting';
 import { useParticipant } from '@/hooks/useParticipant';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useSession } from '@/hooks/useSession';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius } from '@/constants/Theme';
@@ -21,7 +38,11 @@ import { SkeletonList } from '@/components/SkeletonBlock';
 import { Card } from '@/components/Card';
 import { analytics } from '@/lib/analytics';
 
+type AnyNotification = AppNotification | AdminNotification;
+
 const TYPE_ICON: Record<string, React.ElementType> = {
+  assignment_accepted: CheckCircle2,
+  assignment_declined: XCircle,
   new_schedule: CalendarPlus,
   schedule_changed: Calendar,
   event_cancelled: XCircle,
@@ -30,6 +51,8 @@ const TYPE_ICON: Record<string, React.ElementType> = {
 };
 
 const TYPE_COLOR: Record<string, string> = {
+  assignment_accepted: Colors.status.success,
+  assignment_declined: Colors.status.danger,
   new_schedule: Colors.brand.primary,
   schedule_changed: Colors.status.warning,
   event_cancelled: Colors.status.danger,
@@ -41,39 +64,49 @@ function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
   if (min < 1) return 'agora';
-  if (min < 60) return `${min}min atrás`;
+  if (min < 60) return `${min}min atras`;
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h}h atrás`;
+  if (h < 24) return `${h}h atras`;
   const d = Math.floor(h / 24);
-  return `${d}d atrás`;
+  return `${d}d atras`;
+}
+
+function isAdminNotification(item: AnyNotification): item is AdminNotification {
+  return item.type === 'assignment_accepted' || item.type === 'assignment_declined';
 }
 
 export default function NotificacoesScreen() {
-  const { session } = useParticipant();
+  const { session: organizerSession } = useSession();
+  const { session: participantSession } = useParticipant();
   const { colors } = useColorScheme();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notifications, setNotifications] = useState<AnyNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  usePushNotifications(session?.participantId, session?.token);
+  const isOrganizer = Boolean(organizerSession);
+  usePushNotifications(isOrganizer ? undefined : participantSession?.participantId, participantSession?.token);
 
   const load = useCallback(async () => {
-    if (!session) {
+    if (!organizerSession && !participantSession) {
+      setNotifications([]);
       setLoading(false);
       return;
     }
+
     setError(null);
     try {
-      const data = await getParticipantNotifications(session.participantId, session.token);
+      const data = organizerSession
+        ? await getAdminNotifications()
+        : await getParticipantNotifications(participantSession!.participantId, participantSession!.token);
       setNotifications(data);
     } catch (err) {
-      reportError(err, { context: 'NotificacoesScreen.load' });
-      setError('Não foi possível carregar as notificações.');
+      reportError(err, { context: 'NotificacoesScreen.load', isOrganizer });
+      setError('Nao foi possivel carregar as notificacoes.');
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [isOrganizer, organizerSession, participantSession]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -83,36 +116,47 @@ export default function NotificacoesScreen() {
     setRefreshing(false);
   }, [load]);
 
-  async function handleTap(notif: AppNotification) {
-    if (notif.read || !session) return;
+  async function handleTap(notif: AnyNotification) {
+    if (isAdminNotification(notif) && notif.event_id) {
+      router.push(`/events/${notif.event_id}`);
+    }
+
+    if (notif.read) return;
     try {
-      await markNotificationRead(notif.id, session.participantId, session.token);
+      if (isAdminNotification(notif)) {
+        await markAdminNotificationRead(notif.id);
+      } else if (participantSession) {
+        await markNotificationRead(notif.id, participantSession.participantId, participantSession.token);
+      }
       analytics.track('notification_read', { notification_id: notif.id });
       setNotifications((prev) =>
         prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)),
       );
     } catch {
-      // ignore read-marking failures silently
+      // Read state is helpful, but not worth interrupting the user flow.
     }
   }
 
   const primary = Colors.brand.primary;
 
   const header = (
-    <View style={[styles.header, { borderBottomColor: colors.border }]}>
-      <Text style={[Typography.titleMd, { color: colors.text }]}>Notificações</Text>
+    <View style={[styles.header, { backgroundColor: Colors.brand.primary, borderBottomColor: Colors.brand.primaryPressed }]}>
+      <Text style={[Typography.titleMd, { color: '#FFFFFF' }]}>Notificacoes</Text>
+      <Text style={[Typography.caption, { color: Colors.brand.primarySoft, marginTop: 2 }]}>
+        {isOrganizer ? 'Respostas das convocacoes' : 'Alertas da sua agenda'}
+      </Text>
     </View>
   );
 
-  if (!session) {
+  if (!organizerSession && !participantSession) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {header}
         <View style={{ flex: 1 }}>
           <EmptyState
             icon={BellOff}
-            title="Nenhuma notificação"
-            subtitle="Entre em um evento para receber notificações."
+            title="Nenhuma notificacao"
+            subtitle="Entre em um evento para receber notificacoes."
           />
         </View>
       </View>
@@ -151,8 +195,12 @@ export default function NotificacoesScreen() {
         ListEmptyComponent={
           <EmptyState
             icon={Bell}
-            title="Sem notificações"
-            subtitle="Você receberá alertas quando for adicionado a uma escala ou quando houver conflitos."
+            title="Sem notificacoes"
+            subtitle={
+              isOrganizer
+                ? 'Aceites e recusas das convocacoes aparecerao aqui.'
+                : 'Voce recebera alertas quando for adicionado a uma escala ou quando houver conflitos.'
+            }
           />
         }
         renderItem={({ item }) => {
@@ -167,7 +215,7 @@ export default function NotificacoesScreen() {
               accessibilityHint={item.read ? undefined : 'Toque para marcar como lida'}
               accessibilityState={{ checked: item.read }}
             >
-              <Card>
+              <Card leftAccent={!item.read ? accent : undefined}>
                 <View style={styles.row}>
                   <View style={[styles.iconBox, { backgroundColor: accent + '18' }]}>
                     <Icon size={20} color={accent} strokeWidth={2} />
@@ -180,7 +228,7 @@ export default function NotificacoesScreen() {
                       {!item.read && (
                         <View
                           style={[styles.dot, { backgroundColor: primary }]}
-                          accessibilityLabel="Não lida"
+                          accessibilityLabel="Nao lida"
                         />
                       )}
                     </View>

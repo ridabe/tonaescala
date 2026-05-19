@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
-import { CalendarDays, CalendarPlus, Bell, CircleUserRound } from 'lucide-react-native';
-import { ActivityIndicator, View } from 'react-native';
+import { CalendarDays, CalendarPlus, Bell, CircleUserRound, Plus } from 'lucide-react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useSession } from '@/hooks/useSession';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useParticipant } from '@/hooks/useParticipant';
@@ -38,8 +38,11 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
+          height: 68,
+          paddingTop: 6,
+          paddingBottom: 8,
         },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
@@ -54,6 +57,44 @@ export default function TabsLayout() {
         options={{
           title: 'Eventos',
           tabBarIcon: ({ color, size }) => <CalendarPlus size={size} color={color} strokeWidth={2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="criar"
+        options={{
+          title: '',
+          tabBarIcon: () => null,
+          tabBarButton: ({ onPress, accessibilityState }) => (
+            <TouchableOpacity
+              onPress={onPress}
+              accessibilityRole="button"
+              accessibilityLabel="Criar evento"
+              accessibilityState={accessibilityState}
+              activeOpacity={0.85}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: -20,
+              }}
+            >
+              <View
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: 27,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: Colors.brand.accent,
+                  borderWidth: 4,
+                  borderColor: colors.surface,
+                }}
+              >
+                <Plus size={26} color="#FFFFFF" strokeWidth={2.5} />
+              </View>
+              <Text style={{ color: Colors.brand.primary, fontSize: 11, fontWeight: '700', marginTop: 2 }}>Criar</Text>
+            </TouchableOpacity>
+          ),
         }}
       />
       <Tabs.Screen

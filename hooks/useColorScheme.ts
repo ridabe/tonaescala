@@ -1,8 +1,9 @@
-import { useColorScheme as useNativeColorScheme } from 'react-native';
 import { Colors } from '@/constants/Colors';
 
 export function useColorScheme() {
-  const scheme = useNativeColorScheme() ?? 'light';
-  const colors = scheme === 'dark' ? Colors.dark : Colors.light;
+  // The product direction and prototype define the MVP as a clear, clean
+  // light interface. Keep the app stable even when the device uses dark mode.
+  const scheme = 'light';
+  const colors = Colors.light;
   return { scheme, colors };
 }

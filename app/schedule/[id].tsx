@@ -88,7 +88,7 @@ export default function ScheduleDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Minha escala" />
+      <ScreenHeader title="Minha escala" fallbackHref="/(tabs)/agenda" />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[Typography.titleMd, { color: colors.text, marginBottom: Spacing.sm }]}>

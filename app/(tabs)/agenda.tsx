@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Calendar, QrCode } from 'lucide-react-native';
 import type { AgendaItem } from '@/lib/participants';
 import { useParticipant } from '@/hooks/useParticipant';
@@ -80,17 +80,21 @@ export default function AgendaScreen() {
     setRefreshing(false);
   }, [reload]);
 
+  useFocusEffect(useCallback(() => {
+    if (session) reload();
+  }, [reload, session]));
+
   const header = (
-    <View style={[styles.header, { borderBottomColor: colors.border }]}>
-      <Text style={[Typography.titleMd, { color: colors.text }]}>Agenda</Text>
+    <View style={[styles.header, { backgroundColor: primary, borderBottomColor: Colors.brand.primaryPressed }]}>
+      <Text style={[Typography.titleMd, { color: '#FFFFFF' }]}>Agenda</Text>
       {session && (
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: primary }]}
+          style={[styles.fab, { backgroundColor: 'rgba(255,255,255,0.16)' }]}
           onPress={() => router.push('/scan-qr')}
           accessibilityRole="button"
           accessibilityLabel="Escanear QR Code"
         >
-          <QrCode size={18} color="#FFF" strokeWidth={2.5} />
+          <QrCode size={18} color="#FFFFFF" strokeWidth={2.5} />
         </TouchableOpacity>
       )}
     </View>

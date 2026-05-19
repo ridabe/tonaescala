@@ -6,7 +6,9 @@ Organizar a evolucao do ToNaEscala em fases claras, com entregas verificaveis e 
 
 ## 2. Status atual
 
-O projeto esta em fase de beta tecnico do MVP.
+O projeto saiu do MVP tecnico inicial e entrou em uma revisao de escopo para o fluxo de convocacoes por `codigo do evento + email`.
+
+O MVP tecnico atual valida a base do app, mas o fluxo principal sera ajustado para que a escala seja criada pelo admin antes do convidado responder.
 
 | Fase | Status | Leitura atual |
 |---|---|---|
@@ -15,16 +17,42 @@ O projeto esta em fase de beta tecnico do MVP.
 | Fase 2 - MVP participante | Concluida para MVP tecnico | Entrada sem cadastro, agenda, detalhe de evento/escala e confirmacoes implementadas. |
 | Fase 3 - Conflitos e notificacoes | Concluida para MVP tecnico | Conflitos, notificacoes in-app e registro de push token implementados; push real precisa ser validado em dispositivo. |
 | Fase 4 - Polimento e beta | Concluida para beta tecnico | Estados vazios, skeletons, tratamento de erro, offline parcial, Sentry, analytics e verificacoes base adicionados. |
+| Nova Fase 1 - Fluxo de convocacoes | Concluida | Replanejamento do produto para convocacoes identificadas por email, aceite/recusa e status para admin. |
+| Nova Fase 2 - Banco de convocacoes | Concluida | Criada e aplicada migration para `event_assignments`, acesso por codigo + email e respostas com justificativa. |
+| Nova Fase 3 - Admin cria convocacoes | Concluida no repositorio | Tela do admin cria convocacoes com email obrigatorio e o evento lista status dos convocados. |
+| Nova Fase 4 - Entrada do convidado | Concluida no repositorio | Entrada exige codigo + email, carrega convocacoes e permite aceite/recusa com justificativa. |
+| Nova Fase 5 - Status e notificacoes do admin | Concluida no repositorio | Admin ve notificacoes de aceite/recusa e filtra convocacoes por status no evento. |
+| Nova Fase 6 - Validacao beta guiada | Concluida no repositorio | Roteiro beta atualizado para fluxo admin/convidado, notificacoes, filtros e seguranca. |
+| Nova Fase 7 - Execucao beta em device real | Em execucao | Preflight local aprovado; roteiro em Android real documentado em `docs/FASE_7_EXECUCAO_BETA_DEVICE_REAL.md`. |
 
 ## 3. Norte do produto
 
 O ToNaEscala vence pela simplicidade:
 
 - Organizador monta eventos e escalas pelo celular.
-- Participante entra sem cadastro obrigatorio.
+- Convidado entra sem cadastro completo, mas precisa do email previamente convocado.
 - Agenda visual mostra compromissos com clareza.
 - Conflitos aparecem automaticamente.
-- Convites por QR Code/link reduzem friccao.
+- Convites por QR Code/link reduzem friccao, mas o acesso real usa `codigo + email`.
+- Admin acompanha quem viu, aceitou ou recusou cada convocacao.
+
+## 3.1 Mudanca de escopo aprovada
+
+O fluxo antigo permitia que qualquer pessoa com o codigo informasse nome e telefone para entrar no evento. Isso gerava ambiguidade: o admin nao sabia se aquela pessoa era a mesma que deveria atuar em uma equipe/funcao.
+
+Novo fluxo:
+
+1. Admin cria evento.
+2. Admin cria equipes.
+3. Admin cria convocacoes com nome, email, equipe, funcao, horario e observacoes.
+4. Convidado acessa com codigo do evento + email.
+5. Sistema encontra a convocacao do email naquele evento.
+6. Convidado visualiza a convocacao.
+7. Convidado aceita ou recusa.
+8. Recusa exige justificativa.
+9. Admin recebe notificacao de aceite ou recusa.
+
+Documento base: `docs/FLUXO_CONVOCACOES.md`.
 
 ## 4. Fase 0 - Fundacao
 
@@ -196,9 +224,8 @@ Beta:
 
 ## 12. Proximos passos imediatos
 
-1. Aplicar migrations no Supabase alvo.
-2. Rodar roteiro de testes manuais em Android real.
-3. Validar RLS com organizador A, organizador B e participante sem login.
-4. Validar push notification em build compativel.
-5. Corrigir bugs encontrados no beta tecnico.
-6. Gerar build de distribuicao interna.
+1. Executar checklist beta em Android real usando `docs/FASE_7_EXECUCAO_BETA_DEVICE_REAL.md`.
+2. Validar RLS com dois organizadores reais.
+3. Validar aceite, recusa e notificacoes do admin com dados reais de teste.
+4. Corrigir bloqueios encontrados antes do beta externo.
+5. Gerar build de distribuicao interna quando o checklist estiver aprovado.

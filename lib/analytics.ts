@@ -6,6 +6,10 @@ import * as Sentry from '@sentry/react-native';
 export type AnalyticsEvent =
   | 'screen_view'
   | 'event_created'
+  | 'assignment_created'
+  | 'assignment_joined'
+  | 'assignment_accepted'
+  | 'assignment_declined'
   | 'schedule_created'
   | 'participant_joined'
   | 'attendance_confirmed'

@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/Colors';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { initErrorReporting } from '@/lib/errorReporting';
 
@@ -11,7 +12,7 @@ SplashScreen.preventAutoHideAsync();
 initErrorReporting();
 
 export default function RootLayout() {
-  const { scheme } = useColorScheme();
+  const { colors } = useColorScheme();
 
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -19,9 +20,14 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style="dark" backgroundColor={Colors.light.background} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />

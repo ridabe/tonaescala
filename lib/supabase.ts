@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
-import * as SecureStore from 'expo-secure-store';
+import { appStorage } from './storage';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
 const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+  getItem: (key: string) => appStorage.getItem(key),
+  setItem: (key: string, value: string) => appStorage.setItem(key, value),
+  removeItem: (key: string) => appStorage.removeItem(key),
 };
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {

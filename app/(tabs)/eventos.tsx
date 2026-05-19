@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Plus, CalendarPlus } from 'lucide-react-native';
 import { fetchEvents } from '@/lib/events';
 import { reportError } from '@/lib/errorReporting';
@@ -70,7 +70,7 @@ export default function EventosScreen() {
     }
   }, [org]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -82,17 +82,17 @@ export default function EventosScreen() {
   const primary = Colors.brand.primary;
 
   const header = (
-    <View style={[styles.header, { borderBottomColor: colors.border }]}>
+    <View style={[styles.header, { backgroundColor: primary, borderBottomColor: Colors.brand.primaryPressed }]}>
       <View>
-        <Text style={[Typography.titleMd, { color: colors.text }]}>Eventos</Text>
+        <Text style={[Typography.titleMd, { color: '#FFFFFF' }]}>Eventos</Text>
         {org && (
-          <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+          <Text style={[Typography.caption, { color: Colors.brand.primarySoft }]} numberOfLines={1}>
             {org.name}
           </Text>
         )}
       </View>
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: primary }]}
+        style={[styles.fab, { backgroundColor: Colors.brand.accent }]}
         onPress={() => router.push('/events/create')}
         accessibilityRole="button"
         accessibilityLabel="Criar novo evento"

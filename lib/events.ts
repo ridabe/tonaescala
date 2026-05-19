@@ -48,6 +48,22 @@ export async function archiveEvent(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteEvent(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function revokeInvite(eventId: string): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .update({ invite_code: null })
+    .eq('id', eventId);
+  if (error) throw error;
+}
+
 export async function generateInvite(eventId: string): Promise<string> {
   const { data, error } = await supabase.rpc('generate_event_invite', {
     p_event_id: eventId,

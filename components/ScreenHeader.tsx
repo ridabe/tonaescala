@@ -1,28 +1,35 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
-import { router } from 'expo-router';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { router, type Href } from 'expo-router';
+import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Layout } from '@/constants/Theme';
 
 type Props = {
   title: string;
   showBack?: boolean;
+  fallbackHref?: Href;
   right?: React.ReactNode;
 };
 
-export function ScreenHeader({ title, showBack = true, right }: Props) {
-  const { colors } = useColorScheme();
+export function ScreenHeader({ title, showBack = true, fallbackHref = '/(tabs)/agenda', right }: Props) {
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace(fallbackHref);
+  }
 
   return (
-    <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <View style={[styles.header, { backgroundColor: Colors.brand.primary, borderBottomColor: Colors.brand.primaryPressed }]}>
       <View style={styles.left}>
         {showBack && (
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
-            <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
+          <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={8}>
+            <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2} />
           </TouchableOpacity>
         )}
       </View>
-      <Text style={[Typography.titleSm, { color: colors.text }]} numberOfLines={1}>
+      <Text style={[Typography.titleSm, { color: '#FFFFFF' }]} numberOfLines={1}>
         {title}
       </Text>
       <View style={styles.right}>{right ?? null}</View>

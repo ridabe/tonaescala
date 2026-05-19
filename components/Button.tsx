@@ -4,7 +4,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 
-type Variant = 'primary' | 'outline' | 'ghost' | 'danger';
+type Variant = 'primary' | 'accent' | 'outline' | 'ghost' | 'danger';
 
 type Props = {
   label: string;
@@ -34,6 +34,7 @@ export function Button({
 
   const bg: Record<Variant, string> = {
     primary: primary,
+    accent: Colors.brand.accent,
     outline: 'transparent',
     ghost: 'transparent',
     danger: Colors.status.danger,
@@ -41,6 +42,7 @@ export function Button({
 
   const textColor: Record<Variant, string> = {
     primary: '#FFFFFF',
+    accent: '#FFFFFF',
     outline: primary,
     ghost: colors.textMuted,
     danger: '#FFFFFF',
@@ -48,6 +50,7 @@ export function Button({
 
   const borderColor: Record<Variant, string | undefined> = {
     primary: undefined,
+    accent: undefined,
     outline: primary,
     ghost: undefined,
     danger: undefined,
@@ -88,7 +91,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: Layout.minTouchTarget,
+    minHeight: Math.max(Layout.minTouchTarget, 48),
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.lg,
     gap: Spacing.xs,

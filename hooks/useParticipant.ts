@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import { appStorage } from '@/lib/storage';
 
 export type ParticipantSession = {
   participantId: string;
@@ -11,8 +11,8 @@ export function useParticipant() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const id = await SecureStore.getItemAsync('participant_id');
-    const token = await SecureStore.getItemAsync('participant_access_token');
+    const id = await appStorage.getItem('participant_id');
+    const token = await appStorage.getItem('participant_access_token');
     setSession(id && token ? { participantId: id, token } : null);
     setLoading(false);
   }, []);
@@ -20,8 +20,8 @@ export function useParticipant() {
   useEffect(() => { load(); }, [load]);
 
   const clearSession = useCallback(async () => {
-    await SecureStore.deleteItemAsync('participant_id');
-    await SecureStore.deleteItemAsync('participant_access_token');
+    await appStorage.removeItem('participant_id');
+    await appStorage.removeItem('participant_access_token');
     setSession(null);
   }, []);
 

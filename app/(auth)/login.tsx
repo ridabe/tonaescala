@@ -213,15 +213,18 @@ const styles = (colors: ReturnType<typeof import('@/hooks/useColorScheme').useCo
       justifyContent: 'center',
       paddingHorizontal: Spacing.xl,
       paddingBottom: Spacing.xxl,
+      width: '100%',
+      maxWidth: 440,
+      alignSelf: 'center',
     },
     logoRow: {
       alignItems: 'center',
       marginBottom: Spacing.xs,
     },
     logoImg: {
-      width: 72,
-      height: 72,
-      borderRadius: 16,
+      width: 64,
+      height: 64,
+      borderRadius: 14,
       marginBottom: Spacing.sm,
     },
     appName: {

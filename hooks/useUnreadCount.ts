@@ -1,21 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import { getParticipantNotifications } from '@/lib/notifications';
+import { getAdminNotifications, getParticipantNotifications } from '@/lib/notifications';
 import { useParticipant } from '@/hooks/useParticipant';
+import { useSession } from '@/hooks/useSession';
 
 export function useUnreadCount() {
+  const { session: organizerSession } = useSession();
   const { session } = useParticipant();
   const [count, setCount] = useState(0);
 
   const refresh = useCallback(async () => {
-    if (!session) { setCount(0); return; }
     try {
-      const items = await getParticipantNotifications(session.participantId, session.token);
+      const items = organizerSession
+        ? await getAdminNotifications()
+        : session
+          ? await getParticipantNotifications(session.participantId, session.token)
+          : [];
       setCount(items.filter((n) => !n.read).length);
     } catch {
       // ignore
     }
-  }, [session]);
+  }, [organizerSession, session]);
 
   useEffect(() => {
     refresh();

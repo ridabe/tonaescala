@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -10,14 +10,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   CalendarDays, MapPin, MoreVertical, Plus, Share2, Tag,
   Users, ClipboardList, Info, Trash2, Clock, AlertTriangle, UserCheck,
 } from 'lucide-react-native';
-import { fetchEventById, archiveEvent } from '@/lib/events';
+import { fetchEventById, archiveEvent, deleteEvent } from '@/lib/events';
 import { fetchTeams, createTeam, deleteTeam } from '@/lib/teams';
 import { fetchSchedules, deleteSchedule } from '@/lib/schedules';
+import { deleteEventAssignment, getEventAssignmentsForOrganizer, type EventAssignment } from '@/lib/assignments';
 import { getEventParticipantsForOrganizer, type EventParticipant } from '@/lib/participants';
 import { supabase } from '@/lib/supabase';
 import type { Event, Team, Schedule } from '@/lib/types';
@@ -34,6 +35,7 @@ import { Button } from '@/components/Button';
 import { reportError } from '@/lib/errorReporting';
 
 type Tab = 'escala' | 'equipes' | 'conflitos' | 'convidados' | 'info';
+type AssignmentFilter = 'all' | 'accepted' | 'declined' | 'viewed' | 'not_viewed';
 
 type EventConflict = {
   conflict_id: string;
@@ -61,6 +63,16 @@ const STATUS_COLOR: Record<string, string> = {
   declined: Colors.status.danger,
   late: Colors.status.warning,
 };
+const ASSIGNMENT_STATUS_LABEL: Record<string, string> = {
+  pending: 'Pendente',
+  accepted: 'Aceitou',
+  declined: 'Recusou',
+};
+const ASSIGNMENT_STATUS_COLOR: Record<string, string> = {
+  pending: Colors.status.warning,
+  accepted: Colors.status.success,
+  declined: Colors.status.danger,
+};
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -70,6 +82,7 @@ export default function EventDetailScreen() {
   const [event, setEvent] = useState<Event | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [assignments, setAssignments] = useState<EventAssignment[]>([]);
   const [conflicts, setConflicts] = useState<EventConflict[]>([]);
   const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [tab, setTab] = useState<Tab>('escala');
@@ -77,6 +90,7 @@ export default function EventDetailScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all');
 
   // New team modal
   const [teamModalVisible, setTeamModalVisible] = useState(false);
@@ -87,14 +101,16 @@ export default function EventDetailScreen() {
     if (!id) return;
     setLoadError(null);
     try {
-      const [ev, sc, pts] = await Promise.all([
+      const [ev, sc, pts, asg] = await Promise.all([
         fetchEventById(id),
         fetchSchedules(id),
         getEventParticipantsForOrganizer(id),
+        getEventAssignmentsForOrganizer(id),
       ]);
       setEvent(ev);
       setSchedules(sc);
       setParticipants(pts);
+      setAssignments(asg);
       if (org) {
         const t = await fetchTeams(org.id);
         setTeams(t);
@@ -109,7 +125,7 @@ export default function EventDetailScreen() {
     }
   }, [id, org]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -123,11 +139,37 @@ export default function EventDetailScreen() {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Arquivar', style: 'destructive', onPress: async () => {
-          await archiveEvent(id!);
-          router.back();
+          try {
+            await archiveEvent(id!);
+            router.back();
+          } catch (e: any) {
+            Alert.alert('Erro', e.message ?? 'Nao foi possivel arquivar o evento.');
+          }
         },
       },
     ]);
+  }
+
+  async function handleDeleteEvent() {
+    Alert.alert(
+      'Excluir evento',
+      'Tem certeza? Isso remove o evento, escalas, confirmações e presenças vinculadas. Esta ação não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteEvent(id!);
+              router.back();
+            } catch (e: any) {
+              Alert.alert('Erro', e.message);
+            }
+          },
+        },
+      ],
+    );
   }
 
   async function handleDeleteSchedule(scheduleId: string, name: string) {
@@ -135,11 +177,37 @@ export default function EventDetailScreen() {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Remover', style: 'destructive', onPress: async () => {
-          await deleteSchedule(scheduleId);
-          setSchedules((prev) => prev.filter((s) => s.id !== scheduleId));
+          try {
+            await deleteSchedule(scheduleId);
+            setSchedules((prev) => prev.filter((s) => s.id !== scheduleId));
+          } catch (e: any) {
+            Alert.alert('Erro', e.message ?? 'Nao foi possivel remover da escala.');
+          }
         },
       },
     ]);
+  }
+
+  async function handleDeleteAssignment(assignment: EventAssignment) {
+    Alert.alert(
+      'Remover convocado',
+      `Remover ${assignment.invitee_name} desta escala? A pessoa nao conseguira mais responder esta convocacao.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteEventAssignment(assignment.assignment_id);
+              setAssignments((prev) => prev.filter((a) => a.assignment_id !== assignment.assignment_id));
+            } catch (e: any) {
+              Alert.alert('Erro', e.message ?? 'Nao foi possivel remover o convocado.');
+            }
+          },
+        },
+      ],
+    );
   }
 
   function handleScheduleParticipant(participant: EventParticipant) {
@@ -159,8 +227,12 @@ export default function EventDetailScreen() {
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Remover', style: 'destructive', onPress: async () => {
-          await deleteTeam(teamId);
-          setTeams((prev) => prev.filter((t) => t.id !== teamId));
+          try {
+            await deleteTeam(teamId);
+            setTeams((prev) => prev.filter((t) => t.id !== teamId));
+          } catch (e: any) {
+            Alert.alert('Erro', e.message ?? 'Nao foi possivel remover a equipe.');
+          }
         },
       },
     ]);
@@ -183,8 +255,23 @@ export default function EventDetailScreen() {
 
   const primary = Colors.brand.primary;
 
-  const confirmed = schedules.filter((s) => s.confirmation?.status === 'confirmed').length;
-  const pending = schedules.filter((s) => !s.confirmation).length;
+  const usingAssignments = assignments.length > 0;
+  const viewedPending = assignments.filter((a) => a.response_status === 'pending' && a.viewed_at).length;
+  const notViewed = assignments.filter((a) => a.response_status === 'pending' && !a.viewed_at).length;
+  const filteredAssignments = assignments.filter((a) => {
+    if (assignmentFilter === 'accepted') return a.response_status === 'accepted';
+    if (assignmentFilter === 'declined') return a.response_status === 'declined';
+    if (assignmentFilter === 'viewed') return a.response_status === 'pending' && Boolean(a.viewed_at);
+    if (assignmentFilter === 'not_viewed') return a.response_status === 'pending' && !a.viewed_at;
+    return true;
+  });
+  const confirmed = usingAssignments
+    ? assignments.filter((a) => a.response_status === 'accepted').length
+    : schedules.filter((s) => s.confirmation?.status === 'confirmed').length;
+  const pending = usingAssignments
+    ? assignments.filter((a) => a.response_status === 'pending').length
+    : schedules.filter((s) => !s.confirmation).length;
+  const declined = assignments.filter((a) => a.response_status === 'declined').length;
   const conflictCount = conflicts.length;
   const scheduledParticipantIds = new Set(schedules.map((s) => s.participant_id));
   const conflictedScheduleIds = new Set(
@@ -194,7 +281,7 @@ export default function EventDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Evento" />
+        <ScreenHeader title="Evento" fallbackHref="/(tabs)/eventos" />
         <SkeletonList count={5} />
       </View>
     );
@@ -203,7 +290,7 @@ export default function EventDetailScreen() {
   if (loadError || !event) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Evento" />
+        <ScreenHeader title="Evento" fallbackHref="/(tabs)/eventos" />
         <ErrorState message={loadError ?? 'Evento não encontrado.'} onRetry={load} />
       </View>
     );
@@ -213,9 +300,10 @@ export default function EventDetailScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScreenHeader
         title={event.title}
+        fallbackHref="/(tabs)/eventos"
         right={
           <TouchableOpacity onPress={() => setMenuVisible(true)} hitSlop={8}>
-            <MoreVertical size={22} color={colors.text} strokeWidth={2} />
+            <MoreVertical size={22} color="#FFFFFF" strokeWidth={2} />
           </TouchableOpacity>
         }
       />
@@ -227,7 +315,7 @@ export default function EventDetailScreen() {
       <View style={[styles.statsRow, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.statItem}>
           <Text style={[Typography.titleMd, { color: Colors.status.success }]}>{confirmed}</Text>
-          <Text style={[Typography.caption, { color: colors.textMuted }]}>Confirmados</Text>
+          <Text style={[Typography.caption, { color: colors.textMuted }]}>{usingAssignments ? 'Aceitos' : 'Confirmados'}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <View style={styles.statItem}>
@@ -235,6 +323,15 @@ export default function EventDetailScreen() {
           <Text style={[Typography.caption, { color: colors.textMuted }]}>Pendentes</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+        {usingAssignments ? (
+          <>
+            <View style={styles.statItem}>
+              <Text style={[Typography.titleMd, { color: Colors.status.danger }]}>{declined}</Text>
+              <Text style={[Typography.caption, { color: colors.textMuted }]}>Recusas</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+          </>
+        ) : null}
         <View style={styles.statItem}>
           <Text style={[Typography.titleMd, { color: conflictCount > 0 ? Colors.status.warning : colors.text }]}>
             {conflictCount}
@@ -243,7 +340,7 @@ export default function EventDetailScreen() {
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <View style={styles.statItem}>
-          <Text style={[Typography.titleMd, { color: colors.text }]}>{schedules.length}</Text>
+          <Text style={[Typography.titleMd, { color: colors.text }]}>{usingAssignments ? assignments.length : schedules.length}</Text>
           <Text style={[Typography.caption, { color: colors.textMuted }]}>Total</Text>
         </View>
       </View>
@@ -286,11 +383,134 @@ export default function EventDetailScreen() {
         {/* ── ESCALA ── */}
         {tab === 'escala' && (
           <>
-            {schedules.length === 0 ? (
+            {assignments.length > 0 ? (
+              <>
+                <View style={styles.presencaSummary}>
+                  {[
+                    { label: 'Aceitos', value: assignments.filter((a) => a.response_status === 'accepted').length, color: Colors.status.success },
+                    { label: 'Vistos', value: viewedPending, color: Colors.status.warning },
+                    { label: 'Nao vistos', value: notViewed, color: colors.textMuted },
+                    { label: 'Recusas', value: declined, color: Colors.status.danger },
+                  ].map((item) => (
+                    <View key={item.label} style={styles.presencaStat}>
+                      <Text style={[Typography.titleMd, { color: item.color }]}>{item.value}</Text>
+                      <Text style={[Typography.caption, { color: colors.textMuted }]}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filterRow}
+                >
+                  {[
+                    { key: 'all', label: `Todos ${assignments.length}`, color: primary },
+                    { key: 'accepted', label: `Aceitos ${confirmed}`, color: Colors.status.success },
+                    { key: 'declined', label: `Recusas ${declined}`, color: Colors.status.danger },
+                    { key: 'viewed', label: `Vistos ${viewedPending}`, color: Colors.status.warning },
+                    { key: 'not_viewed', label: `Nao vistos ${notViewed}`, color: colors.textMuted },
+                  ].map((item) => {
+                    const active = assignmentFilter === item.key;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        onPress={() => setAssignmentFilter(item.key as AssignmentFilter)}
+                        style={[
+                          styles.filterChip,
+                          {
+                            borderColor: active ? item.color : colors.border,
+                            backgroundColor: active ? item.color + '18' : colors.surface,
+                          },
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={`Filtrar ${item.label}`}
+                      >
+                        <Text style={[Typography.caption, { color: active ? item.color : colors.textMuted }]}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+                {filteredAssignments.length === 0 ? (
+                  <EmptyState
+                    icon={ClipboardList}
+                    title="Nenhum convocado neste filtro"
+                    subtitle="Troque o filtro para ver outros status da escala."
+                  />
+                ) : null}
+                {filteredAssignments.map((a) => {
+                  const statusColor = ASSIGNMENT_STATUS_COLOR[a.response_status] ?? colors.textMuted;
+                  return (
+                    <Card key={a.assignment_id} leftAccent={statusColor}>
+                      <View style={{ gap: Spacing.sm }}>
+                        <View style={styles.scheduleRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                              {a.invitee_name}
+                            </Text>
+                            <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                              {a.team_name ?? 'Sem equipe'}{a.role ? ` - ${a.role}` : ''}
+                            </Text>
+                            <Text style={[Typography.caption, { color: colors.textSoft }]}>
+                              {a.invitee_email}
+                            </Text>
+                            {a.arrival_time || a.start_time ? (
+                              <Text style={[Typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
+                                {formatTime(a.arrival_time ?? a.start_time!)}
+                                {a.end_time ? ` ate ${formatTime(a.end_time)}` : ''}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+                            <Text style={[Typography.micro, { color: statusColor }]}>
+                              {ASSIGNMENT_STATUS_LABEL[a.response_status] ?? 'Pendente'}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleDeleteAssignment(a)}
+                            hitSlop={8}
+                            style={styles.deleteBtn}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remover ${a.invitee_name} da escala`}
+                          >
+                            <Trash2 size={16} color={Colors.status.danger} strokeWidth={2} />
+                          </TouchableOpacity>
+                        </View>
+                        {a.response_status === 'pending' ? (
+                          <Text style={[Typography.caption, { color: a.viewed_at ? Colors.status.warning : colors.textMuted }]}>
+                            {a.viewed_at ? 'Visualizou, aguardando resposta' : 'Ainda nao visualizou'}
+                          </Text>
+                        ) : null}
+                        {a.decline_reason ? (
+                          <Text style={[Typography.caption, { color: Colors.status.danger }]}>
+                            Motivo: {a.decline_reason}
+                          </Text>
+                        ) : null}
+                        {a.notes ? (
+                          <Text style={[Typography.caption, { color: colors.textSoft }]}>
+                            Obs: {a.notes}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </Card>
+                  );
+                })}
+                <View style={{ marginTop: Spacing.md }}>
+                  <Button
+                    label="Adicionar convocado"
+                    variant="outline"
+                    icon={Plus}
+                    onPress={() => router.push(`/events/${id}/add-schedule`)}
+                  />
+                </View>
+              </>
+            ) : schedules.length === 0 ? (
               <EmptyState
                 icon={ClipboardList}
-                title="Escala vazia"
-                subtitle="Adicione participantes para montar a escala deste evento."
+                title="Nenhum convocado"
+                subtitle="Adicione pessoas com email, equipe e funcao para montar a escala convocada."
                 actionLabel="Adicionar à escala"
                 onAction={() => router.push(`/events/${id}/add-schedule`)}
               />
@@ -529,6 +749,7 @@ export default function EventDetailScreen() {
       <View style={styles.floatingBar}>
         <Button
           label="Compartilhar convite"
+          variant="accent"
           icon={Share2}
           onPress={() => router.push(`/events/${id}/invite`)}
         />
@@ -547,6 +768,10 @@ export default function EventDetailScreen() {
             <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); handleArchive(); }}>
               <Text style={[Typography.body, { color: Colors.status.danger }]}>Arquivar evento</Text>
+            </TouchableOpacity>
+            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); handleDeleteEvent(); }}>
+              <Text style={[Typography.body, { color: Colors.status.danger }]}>Excluir permanentemente</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -665,6 +890,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   presencaStat: { alignItems: 'center' },
+  filterRow: {
+    gap: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  filterChip: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
   participantActions: {
     flexDirection: 'row',
     alignItems: 'center',
