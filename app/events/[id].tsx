@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   CalendarDays, MapPin, MoreVertical, Plus, Share2, Tag,
@@ -80,6 +81,7 @@ export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { org } = useOrganization();
   const { colors } = useColorScheme();
+  const insets = useSafeAreaInsets();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -398,7 +400,7 @@ export default function EventDetailScreen() {
             )}
             {t === 'convidados' && <UserCheck size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
             {t === 'info' && <Info size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
-            <Text style={[Typography.caption, { color: tab === t ? primary : colors.textMuted, marginLeft: 4, textTransform: 'capitalize' }]}>
+            <Text style={[Typography.caption, { color: tab === t ? primary : colors.textMuted, marginTop: 2, textTransform: 'capitalize' }]}>
               {t === 'escala' ? 'Escala' : t === 'equipes' ? 'Equipes' : t === 'conflitos' ? 'Conflitos' : t === 'convidados' ? 'Presenças' : 'Info'}
             </Text>
           </TouchableOpacity>
@@ -408,7 +410,7 @@ export default function EventDetailScreen() {
       {/* Tab content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.tabContent}
+        contentContainerStyle={[styles.tabContent, { paddingBottom: 120 + insets.bottom }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
       >
         {/* ── ESCALA ── */}
@@ -803,7 +805,7 @@ export default function EventDetailScreen() {
       </ScrollView>
 
       {/* Floating share button */}
-      <View style={styles.floatingBar}>
+      <View style={[styles.floatingBar, { paddingBottom: Spacing.xl + insets.bottom }]}>
         <Button
           label="Compartilhar convite"
           variant="accent"
@@ -946,14 +948,14 @@ const styles = StyleSheet.create({
   },
   tabBtn: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabContent: { padding: Spacing.lg, paddingBottom: 120, gap: Spacing.sm },
+  tabContent: { padding: Spacing.lg, gap: Spacing.sm },
   scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   statusBadge: {
     paddingHorizontal: Spacing.sm,
@@ -967,7 +969,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
     paddingTop: Spacing.md,
   },
   menuOverlay: {
