@@ -18,6 +18,8 @@ Este diretório reúne a documentação de produto, técnica e execução do ToN
 - `IDENTIDADE_VISUAL.md`: identidade visual escolhida, paleta, tipografia, tokens e constantes do app.
 - `ROADMAP_EXECUTIVO.md`: fases de entrega, critérios de aceite e riscos.
 - `TESTES_MANUAIS_BETA.md`: roteiro de validacao manual do MVP antes do beta externo.
+- `CLIENTE_AUDIOS_2026-05-20_TRANSCRICAO.md`: resumo legivel das sugestoes do cliente enviadas por audio.
+- `PLANO_FEATURES_CLIENTE_AUDIO_2026-05-20.md`: analise dos audios do cliente e plano de features para repertorio, apoio musical, personalizacao e marketplace futuro.
 
 ## Decisões-base do projeto
 

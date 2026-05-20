@@ -7,10 +7,7 @@ import { supabase } from './supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export const authRedirectTo = makeRedirectUri({
-  scheme: 'tonaescala',
-  path: 'auth/callback',
-});
+export const authRedirectTo = 'tonaescala://auth/callback';
 
 export async function createSessionFromUrl(url: string) {
   const { params, errorCode } = QueryParams.getQueryParams(url);
@@ -65,23 +62,34 @@ export async function signInWithGoogle() {
     });
   });
 
-  const browserResult = WebBrowser.openAuthSessionAsync(
-    data.url ?? '',
-    returnUrl,
-    Platform.OS === 'android'
-      ? {
-          createTask: false,
-          showTitle: true,
-          toolbarColor: '#0F766E',
-        }
-      : undefined,
-  );
+  let browserResult: Promise<WebBrowser.WebBrowserAuthSessionResult | WebBrowser.WebBrowserResult>;
 
-  const result = await Promise.race([browserResult, deepLinkResult]);
+  if (Platform.OS === 'android') {
+    browserResult = WebBrowser.openBrowserAsync(data.url ?? '', {
+      createTask: false,
+      showTitle: true,
+      toolbarColor: '#0F766E',
+    });
+  } else {
+    browserResult = WebBrowser.openAuthSessionAsync(data.url ?? '', returnUrl);
+  }
+
+  const timeoutResult = new Promise<{ type: 'timeout' }>((resolve) => {
+    setTimeout(() => resolve({ type: 'timeout' }), 90000);
+  });
+
+  const result = Platform.OS === 'android'
+    ? await Promise.race([deepLinkResult, timeoutResult])
+    : await Promise.race([browserResult, deepLinkResult, timeoutResult]);
+
   subscription?.remove();
 
   if (__DEV__) {
     console.log('[OAuth] browser result', result);
+  }
+
+  if (result.type === 'timeout') {
+    throw new Error('Tempo esgotado aguardando o retorno do Google para o app.');
   }
 
   if (result.type === 'success') {
