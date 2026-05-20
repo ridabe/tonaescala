@@ -34,7 +34,13 @@
       "mcp__supabase__execute_sql",
       "mcp__supabase__apply_migration",
       "mcp__supabase__list_tables",
-      "mcp__supabase__deploy_edge_function"
+      "mcp__supabase__deploy_edge_function",
+      "Bash(eas build:view 9610c5c1-ff61-4555-9d6d-cb9786cb308f)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const deps={...p.dependencies,...p.devDependencies}; console.log\\('expo:', deps.expo\\); console.log\\('sdk:', deps['expo-build-properties']\\); console.log\\('sentry:', deps['@sentry/react-native']\\); console.log\\('camera:', deps['expo-camera']\\);\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\({...p.dependencies,...p.devDependencies}, null, 2\\)\\);\")",
+      "Bash(npx expo-doctor *)",
+      "Bash(node -e ' *)",
+      "Bash(npm uninstall *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"

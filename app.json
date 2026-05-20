@@ -2,7 +2,7 @@
   "expo": {
     "name": "ToNaEscala",
     "slug": "tonaescala",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tonaescala",
@@ -24,8 +24,7 @@
         "backgroundColor": "#0F766E"
       },
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ],
       "allowBackup": false
     },
@@ -42,7 +41,6 @@
       ],
       "expo-secure-store",
       "expo-camera",
-      "@sentry/react-native",
       "@react-native-community/datetimepicker",
       "expo-font"
     ],
