@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 import { CalendarDays, CalendarPlus, Bell, CircleUserRound, Plus } from 'lucide-react-native';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSession } from '@/hooks/useSession';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useParticipant } from '@/hooks/useParticipant';
@@ -14,6 +15,7 @@ export default function TabsLayout() {
   const { session: participantSession, loading: participantLoading } = useParticipant();
   const { colors } = useColorScheme();
   const unreadCount = useUnreadCount();
+  const insets = useSafeAreaInsets();
 
   if (sessionLoading || participantLoading || (session && orgLoading)) {
     return (
@@ -38,9 +40,9 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 68,
+          height: 68 + insets.bottom,
           paddingTop: 6,
-          paddingBottom: 8,
+          paddingBottom: 8 + insets.bottom,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}

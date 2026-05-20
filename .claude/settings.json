@@ -44,7 +44,12 @@
       "Bash(npx patch-package *)",
       "Bash(node -e \"const pkg = require\\('./node_modules/react-native-reanimated/package.json'\\); console.log\\('reanimated:', pkg.version\\)\")",
       "Bash(node -e \"const pkg = require\\('./node_modules/expo-notifications/package.json'\\); console.log\\('expo-notifications:', pkg.version\\)\")",
-      "Bash(npx eas *)"
+      "Bash(npx eas *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":8081\")",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(taskkill /PID 1712 /F)",
+      "PowerShell(Stop-Process -Id 1712 -Force)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"
