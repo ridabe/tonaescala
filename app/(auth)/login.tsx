@@ -1,33 +1,125 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  View,
+  Animated,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ActivityIndicator,
-  Image,
+  View,
 } from 'react-native';
 import { router } from 'expo-router';
-import { QrCode } from 'lucide-react-native';
+import {
+  BarChart3,
+  CalendarPlus,
+  CheckCircle2,
+  Mail,
+  QrCode,
+  ShieldCheck,
+} from 'lucide-react-native';
+import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
+import { createSessionFromUrl, signInWithGoogle } from '@/lib/authOAuth';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 
 type Mode = 'options' | 'email';
 
+const HERO_SLIDES = [
+  {
+    eyebrow: 'Eventos',
+    title: 'Crie eventos em minutos',
+    subtitle: 'Monte a estrutura, defina equipes e deixe tudo pronto para convidar.',
+    color: Colors.brand.primary,
+    softColor: Colors.brand.primarySoft,
+    Icon: CalendarPlus,
+    metric: '4 etapas',
+  },
+  {
+    eyebrow: 'Convites',
+    title: 'Convide por código ou QR Code',
+    subtitle: 'Quem recebeu convite entra rápido, sem precisar criar conta.',
+    color: Colors.brand.accent,
+    softColor: Colors.brand.accentSoft,
+    Icon: QrCode,
+    metric: 'TNE-2026',
+  },
+  {
+    eyebrow: 'Equipe',
+    title: 'Acompanhe aceites e recusas',
+    subtitle: 'Veja quem confirmou, quem recusou e quem ainda precisa responder.',
+    color: Colors.status.info,
+    softColor: Colors.status.infoSoft,
+    Icon: CheckCircle2,
+    metric: '86%',
+  },
+  {
+    eyebrow: 'Insights',
+    title: 'Tenha a escala sob controle',
+    subtitle: 'Use métricas por evento para decidir o que precisa de atenção.',
+    color: Colors.status.success,
+    softColor: Colors.status.successSoft,
+    Icon: BarChart3,
+    metric: 'Ao vivo',
+  },
+];
+
 export default function LoginScreen() {
   const { colors } = useColorScheme();
+  const url = Linking.useLinkingURL();
 
   const [mode, setMode] = useState<Mode>('options');
+  const [activeSlide, setActiveSlide] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const heroAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      Animated.timing(heroAnim, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start(() => {
+        setActiveSlide((current) => (current + 1) % HERO_SLIDES.length);
+        Animated.timing(heroAnim, {
+          toValue: 1,
+          duration: 360,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4200);
+
+    return () => clearInterval(timer);
+  }, [heroAnim]);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1100, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0, duration: 1100, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim]);
+
+  useEffect(() => {
+    if (!url) return;
+    createSessionFromUrl(url).catch((error) => {
+      Alert.alert('Erro ao entrar', error.message ?? 'Não foi possível concluir o login.');
+    });
+  }, [url]);
 
   async function handleEmailLogin() {
     if (!email || !password) { Alert.alert('Preencha e-mail e senha.'); return; }
@@ -48,9 +140,13 @@ export default function LoginScreen() {
 
   async function handleGoogleLogin() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-    setLoading(false);
-    if (error) Alert.alert('Erro', error.message);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      Alert.alert('Erro', error.message ?? 'Não foi possível entrar com Google.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleEnterByCode() {
@@ -76,178 +172,297 @@ export default function LoginScreen() {
       style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={s.inner}>
-        <View style={s.logoRow}>
-          <Image source={require('@/assets/images/icon.png')} style={s.logoImg} />
-          <Text style={[s.appName, { color: primary }]}>ToNaEscala</Text>
-        </View>
-        <Text style={[s.tagline, { color: colors.textMuted }]}>
-          Escalas organizadas para pessoas que servem juntas
-        </Text>
-
-        {/* Entrada por código — sempre visível */}
-        <View style={s.codeSection}>
-          <Text style={[s.sectionLabel, { color: colors.textMuted }]}>Entrar em evento</Text>
-          <View style={s.codeRow}>
-            <TextInput
-              style={[s.input, s.codeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-              placeholder="Código  TNE-XXXXXX"
-              placeholderTextColor={colors.textSoft}
-              value={inviteCode}
-              onChangeText={setInviteCode}
-              autoCapitalize="characters"
-              returnKeyType="go"
-              onSubmitEditing={handleEnterByCode}
-            />
-            <TouchableOpacity
-              style={[s.qrBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => router.push('/scan-qr')}
-              accessibilityRole="button"
-              accessibilityLabel="Escanear QR Code"
-            >
-              <QrCode size={22} color={primary} strokeWidth={2} />
-            </TouchableOpacity>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={s.inner}>
+          <View style={s.brandRow}>
+            <Image source={require('@/assets/images/icon.png')} style={s.logoImg} />
+            <View style={{ flex: 1 }}>
+              <Text style={[s.appName, { color: primary }]}>ToNaEscala</Text>
+              <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                Escalas organizadas para pessoas que servem juntas
+              </Text>
+            </View>
           </View>
-          <TouchableOpacity
-            style={[s.btn, s.btnOutline, { borderColor: primary }]}
-            onPress={handleEnterByCode}
-            disabled={loading}
-            accessibilityRole="button"
-            accessibilityLabel="Entrar no evento pelo código"
-            accessibilityState={{ disabled: loading }}
-          >
-            {loading ? (
-              <ActivityIndicator color={primary} />
-            ) : (
-              <Text style={[s.btnText, { color: primary }]}>Entrar no evento</Text>
-            )}
-          </TouchableOpacity>
-        </View>
 
-        <View style={s.divider}>
-          <View style={[s.dividerLine, { backgroundColor: colors.border }]} />
-          <Text style={[s.dividerText, { color: colors.textSoft }]}>ou</Text>
-          <View style={[s.dividerLine, { backgroundColor: colors.border }]} />
-        </View>
+          <HeroCarousel
+            activeSlide={activeSlide}
+            animation={heroAnim}
+            pulse={pulseAnim}
+            onSelect={setActiveSlide}
+          />
 
-        {/* Login do organizador */}
-        {mode === 'options' ? (
-          <View>
+          <View style={[s.guestPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={s.panelHeader}>
+              <View style={[s.panelIcon, { backgroundColor: Colors.brand.primarySoft }]}>
+                <QrCode size={18} color={Colors.brand.primary} strokeWidth={2.3} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[Typography.bodyStrong, { color: colors.text }]}>Recebeu um convite?</Text>
+                <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                  Insira o código recebido ou escaneie o QR Code.
+                </Text>
+              </View>
+            </View>
+
+            <View style={s.codeRow}>
+              <TextInput
+                style={[s.input, s.codeInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
+                placeholder="Código TNE-XXXXXX"
+                placeholderTextColor={colors.textSoft}
+                value={inviteCode}
+                onChangeText={setInviteCode}
+                autoCapitalize="characters"
+                returnKeyType="go"
+                onSubmitEditing={handleEnterByCode}
+              />
+              <TouchableOpacity
+                style={[s.qrBtn, { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary }]}
+                onPress={() => router.push('/scan-qr')}
+                accessibilityRole="button"
+                accessibilityLabel="Escanear QR Code"
+              >
+                <QrCode size={22} color="#FFFFFF" strokeWidth={2.3} />
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { backgroundColor: primary }]}
-              onPress={handleGoogleLogin}
+              style={[s.btn, s.btnOutline, { borderColor: primary }]}
+              onPress={handleEnterByCode}
               disabled={loading}
               accessibilityRole="button"
-              accessibilityLabel="Entrar com Google"
+              accessibilityLabel="Entrar no evento pelo código"
               accessibilityState={{ disabled: loading }}
             >
-              <Text style={[s.btnText, { color: '#FFF' }]}>Entrar com Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, s.btnOutline, { borderColor: primary, marginTop: Spacing.sm }]}
-              onPress={() => setMode('email')}
-              accessibilityRole="button"
-              accessibilityLabel="Entrar com e-mail"
-            >
-              <Text style={[s.btnText, { color: primary }]}>Entrar com e-mail</Text>
+              {loading ? (
+                <ActivityIndicator color={primary} />
+              ) : (
+                <Text style={[s.btnText, { color: primary }]}>Entrar no evento</Text>
+              )}
             </TouchableOpacity>
           </View>
-        ) : (
-          <View>
-            <TextInput
-              style={[s.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-              placeholder="E-mail"
-              placeholderTextColor={colors.textSoft}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={[s.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, marginTop: Spacing.sm }]}
-              placeholder="Senha"
-              placeholderTextColor={colors.textSoft}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            <TouchableOpacity
-              style={[s.btn, s.btnPrimary, { backgroundColor: primary, marginTop: Spacing.md }]}
-              onPress={handleEmailLogin}
-              disabled={loading}
-              accessibilityRole="button"
-              accessibilityLabel="Entrar com e-mail e senha"
-              accessibilityState={{ disabled: loading, busy: loading }}
-            >
-              {loading ? <ActivityIndicator color="#FFF" /> : <Text style={[s.btnText, { color: '#FFF' }]}>Entrar</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, { marginTop: Spacing.sm }]}
-              onPress={handleEmailSignUp}
-              disabled={loading}
-              accessibilityRole="button"
-              accessibilityLabel="Criar conta nova"
-            >
-              <Text style={[s.btnText, { color: colors.textMuted }]}>Criar conta</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setMode('options')}
-              style={s.back}
-              accessibilityRole="button"
-              accessibilityLabel="Voltar para opções de login"
-            >
-              <Text style={[Typography.caption, { color: colors.textMuted }]}>Voltar</Text>
-            </TouchableOpacity>
+
+          <View style={s.organizerIntro}>
+            <View style={[s.organizerIcon, { backgroundColor: Colors.brand.accentSoft }]}>
+              <ShieldCheck size={18} color={Colors.brand.accentPressed} strokeWidth={2.3} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[Typography.bodyStrong, { color: colors.text }]}>Quer criar seu próprio evento?</Text>
+              <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                Cadastre-se para administrar eventos, convidar sua equipe e acompanhar as escalas.
+              </Text>
+            </View>
           </View>
-        )}
-      </View>
+
+          {mode === 'options' ? (
+            <View style={s.actionStack}>
+              <TouchableOpacity
+                style={[s.btn, s.btnPrimary, { backgroundColor: primary }]}
+                onPress={handleGoogleLogin}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Entrar com Google"
+                accessibilityState={{ disabled: loading }}
+              >
+                <Text style={[s.btnText, { color: '#FFF' }]}>Entrar com Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, s.btnOutline, { borderColor: primary }]}
+                onPress={() => setMode('email')}
+                accessibilityRole="button"
+                accessibilityLabel="Entrar com e-mail"
+              >
+                <Mail size={17} color={primary} strokeWidth={2.2} />
+                <Text style={[s.btnText, { color: primary }]}>Entrar com e-mail</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={s.actionStack}>
+              <TextInput
+                style={[s.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+                placeholder="E-mail"
+                placeholderTextColor={colors.textSoft}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={[s.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+                placeholder="Senha"
+                placeholderTextColor={colors.textSoft}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+              <TouchableOpacity
+                style={[s.btn, s.btnPrimary, { backgroundColor: primary }]}
+                onPress={handleEmailLogin}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Entrar com e-mail e senha"
+                accessibilityState={{ disabled: loading, busy: loading }}
+              >
+                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={[s.btnText, { color: '#FFF' }]}>Entrar</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.btn}
+                onPress={handleEmailSignUp}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Criar conta nova"
+              >
+                <Text style={[s.btnText, { color: colors.textMuted }]}>Criar conta</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setMode('options')}
+                style={s.back}
+                accessibilityRole="button"
+                accessibilityLabel="Voltar para opções de login"
+              >
+                <Text style={[Typography.caption, { color: colors.textMuted }]}>Voltar</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function HeroCarousel({
+  activeSlide,
+  animation,
+  pulse,
+  onSelect,
+}: {
+  activeSlide: number;
+  animation: Animated.Value;
+  pulse: Animated.Value;
+  onSelect: (index: number) => void;
+}) {
+  const { colors } = useColorScheme();
+  const slide = HERO_SLIDES[activeSlide];
+  const Icon = slide.Icon;
+  const translateY = animation.interpolate({ inputRange: [0, 1], outputRange: [10, 0] });
+  const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
+
+  return (
+    <View style={[heroStyles.wrap, { backgroundColor: slide.color }]}>
+      <View style={heroStyles.textureOne} />
+      <View style={[heroStyles.textureTwo, { backgroundColor: slide.softColor }]} />
+
+      <Animated.View style={[heroStyles.content, { opacity: animation, transform: [{ translateY }] }]}>
+        <View style={heroStyles.heroTop}>
+          <View style={heroStyles.logoBadge}>
+            <Image source={require('@/assets/images/icon.png')} style={heroStyles.badgeLogo} />
+          </View>
+          <View style={[heroStyles.metricPill, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+            <Text style={heroStyles.metricText}>{slide.metric}</Text>
+          </View>
+        </View>
+
+        <View style={heroStyles.heroBody}>
+          <View style={{ flex: 1 }}>
+            <Text style={heroStyles.eyebrow}>{slide.eyebrow}</Text>
+            <Text style={heroStyles.title}>{slide.title}</Text>
+            <Text style={heroStyles.subtitle}>{slide.subtitle}</Text>
+          </View>
+          <Animated.View style={[heroStyles.featureIcon, { transform: [{ scale: pulseScale }] }]}>
+            <Icon size={34} color={slide.color} strokeWidth={2.2} />
+          </Animated.View>
+        </View>
+
+        <View style={heroStyles.mockPanel}>
+          <View style={heroStyles.mockHeader}>
+            <View style={heroStyles.avatarStack}>
+              {[0, 1, 2].map((item) => (
+                <View key={item} style={[heroStyles.avatar, { marginLeft: item === 0 ? 0 : -7, backgroundColor: item === 1 ? Colors.brand.accent : Colors.status.info }]} />
+              ))}
+            </View>
+            <Text style={[Typography.micro, { color: colors.textMuted }]}>Equipe escalada</Text>
+          </View>
+          <View style={heroStyles.mockRows}>
+            <View style={[heroStyles.mockBar, { width: '86%', backgroundColor: slide.color }]} />
+            <View style={[heroStyles.mockBar, { width: '62%', backgroundColor: Colors.brand.accent }]} />
+            <View style={[heroStyles.mockBar, { width: '42%', backgroundColor: Colors.status.info }]} />
+          </View>
+        </View>
+      </Animated.View>
+
+      <View style={heroStyles.dots}>
+        {HERO_SLIDES.map((item, index) => (
+          <TouchableOpacity
+            key={item.title}
+            onPress={() => onSelect(index)}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver slide ${index + 1}`}
+            style={[
+              heroStyles.dot,
+              {
+                width: activeSlide === index ? 20 : 7,
+                backgroundColor: activeSlide === index ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
+              },
+            ]}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
 
 const styles = (colors: ReturnType<typeof import('@/hooks/useColorScheme').useColorScheme>['colors']) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    inner: {
-      flex: 1,
-      justifyContent: 'center',
-      paddingHorizontal: Spacing.xl,
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Platform.OS === 'ios' ? 54 : 34,
       paddingBottom: Spacing.xxl,
+    },
+    inner: {
       width: '100%',
       maxWidth: 440,
       alignSelf: 'center',
+      gap: Spacing.md,
     },
-    logoRow: {
+    brandRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: Spacing.xs,
+      gap: Spacing.md,
     },
     logoImg: {
-      width: 64,
-      height: 64,
-      borderRadius: 14,
-      marginBottom: Spacing.sm,
+      width: 48,
+      height: 48,
+      borderRadius: Radius.md,
     },
     appName: {
-      ...Typography.display,
-      textAlign: 'center',
+      ...Typography.titleLg,
     },
-    tagline: {
-      ...Typography.body,
-      textAlign: 'center',
-      marginTop: Spacing.xs,
-      marginBottom: Spacing.xxl,
+    guestPanel: {
+      borderWidth: 1,
+      borderRadius: Radius.md,
+      padding: Spacing.lg,
+      gap: Spacing.md,
     },
-    sectionLabel: {
-      ...Typography.caption,
-      marginBottom: Spacing.sm,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
+    panelHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
     },
-    codeSection: { marginBottom: Spacing.lg },
+    panelIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: Radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     codeRow: {
       flexDirection: 'row',
       gap: Spacing.sm,
-      marginBottom: Spacing.sm,
     },
     codeInput: { flex: 1 },
     qrBtn: {
@@ -269,18 +484,163 @@ const styles = (colors: ReturnType<typeof import('@/hooks/useColorScheme').useCo
       borderRadius: Radius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: Layout.minTouchTarget,
+      minHeight: Math.max(Layout.minTouchTarget, 48),
+      flexDirection: 'row',
+      gap: Spacing.xs,
     },
     btnPrimary: {},
     btnOutline: { borderWidth: 1 },
     btnText: { ...Typography.bodyStrong },
-    divider: {
+    organizerIntro: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginVertical: Spacing.lg,
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.xs,
+    },
+    organizerIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: Radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionStack: {
       gap: Spacing.sm,
     },
-    dividerLine: { flex: 1, height: 1 },
-    dividerText: { ...Typography.caption },
-    back: { marginTop: Spacing.md, alignSelf: 'center' },
+    back: { marginTop: Spacing.xs, alignSelf: 'center' },
   });
+
+const heroStyles = StyleSheet.create({
+  wrap: {
+    minHeight: 270,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+    padding: Spacing.lg,
+  },
+  textureOne: {
+    position: 'absolute',
+    right: -36,
+    top: -42,
+    width: 148,
+    height: 148,
+    borderRadius: 74,
+    backgroundColor: 'rgba(255,255,255,0.13)',
+  },
+  textureTwo: {
+    position: 'absolute',
+    left: -42,
+    bottom: -64,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    opacity: 0.22,
+  },
+  content: {
+    flex: 1,
+    gap: Spacing.md,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  logoBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.md,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeLogo: {
+    width: 26,
+    height: 26,
+    borderRadius: Radius.sm,
+  },
+  metricPill: {
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
+  metricText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+  },
+  heroBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  eyebrow: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: 27,
+    lineHeight: 32,
+    fontWeight: '800',
+  },
+  subtitle: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    marginTop: Spacing.xs,
+  },
+  featureIcon: {
+    width: 62,
+    height: 62,
+    borderRadius: Radius.full,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mockPanel: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  mockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  avatarStack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  mockRows: {
+    gap: 6,
+  },
+  mockBar: {
+    height: 7,
+    borderRadius: Radius.full,
+  },
+  dots: {
+    position: 'absolute',
+    bottom: Spacing.md,
+    right: Spacing.lg,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  dot: {
+    height: 7,
+    borderRadius: Radius.full,
+  },
+});

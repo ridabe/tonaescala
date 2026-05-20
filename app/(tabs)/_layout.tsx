@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
-import { CalendarDays, CalendarPlus, Bell, CircleUserRound, Plus } from 'lucide-react-native';
+import { BarChart3, CalendarDays, CalendarPlus, Bell, CircleUserRound, Plus } from 'lucide-react-native';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSession } from '@/hooks/useSession';
@@ -59,6 +59,13 @@ export default function TabsLayout() {
         options={{
           title: 'Eventos',
           tabBarIcon: ({ color, size }) => <CalendarPlus size={size} color={color} strokeWidth={2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="insights"
+        options={{
+          title: 'Insights',
+          tabBarIcon: ({ color, size }) => <BarChart3 size={size} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
