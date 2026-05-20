@@ -1,5 +1,6 @@
 import { makeRedirectUri } from 'expo-auth-session';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
@@ -47,7 +48,41 @@ export async function signInWithGoogle() {
 
   if (error) throw error;
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url ?? '', returnUrl);
+  if (__DEV__) {
+    console.log('[OAuth] redirectTo', returnUrl);
+  }
+
+  let subscription: { remove: () => void } | undefined;
+
+  const deepLinkResult = new Promise<{ type: 'success'; url: string }>((resolve) => {
+    subscription = Linking.addEventListener('url', ({ url }) => {
+      if (__DEV__) {
+        console.log('[OAuth] deep link received', url);
+      }
+      WebBrowser.dismissBrowser().catch(() => {});
+      WebBrowser.dismissAuthSession();
+      resolve({ type: 'success', url });
+    });
+  });
+
+  const browserResult = WebBrowser.openAuthSessionAsync(
+    data.url ?? '',
+    returnUrl,
+    Platform.OS === 'android'
+      ? {
+          createTask: false,
+          showTitle: true,
+          toolbarColor: '#0F766E',
+        }
+      : undefined,
+  );
+
+  const result = await Promise.race([browserResult, deepLinkResult]);
+  subscription?.remove();
+
+  if (__DEV__) {
+    console.log('[OAuth] browser result', result);
+  }
 
   if (result.type === 'success') {
     return createSessionFromUrl(result.url);
