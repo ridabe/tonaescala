@@ -40,7 +40,11 @@
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\({...p.dependencies,...p.devDependencies}, null, 2\\)\\);\")",
       "Bash(npx expo-doctor *)",
       "Bash(node -e ' *)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(npx patch-package *)",
+      "Bash(node -e \"const pkg = require\\('./node_modules/react-native-reanimated/package.json'\\); console.log\\('reanimated:', pkg.version\\)\")",
+      "Bash(node -e \"const pkg = require\\('./node_modules/expo-notifications/package.json'\\); console.log\\('expo-notifications:', pkg.version\\)\")",
+      "Bash(npx eas *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"

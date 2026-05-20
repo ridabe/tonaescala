@@ -2,7 +2,7 @@
   "expo": {
     "name": "ToNaEscala",
     "slug": "tonaescala",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tonaescala",
@@ -18,7 +18,8 @@
     },
     "android": {
       "package": "com.tonaescala.app",
-      "versionCode": 1,
+      "versionCode": 3,
+      "newArchEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0F766E"
@@ -42,7 +43,15 @@
       "expo-secure-store",
       "expo-camera",
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#0F766E",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

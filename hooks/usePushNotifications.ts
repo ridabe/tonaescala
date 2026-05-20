@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { saveParticipantPushToken } from '@/lib/notifications';
 
 export function usePushNotifications(participantId?: string, token?: string) {
@@ -41,7 +42,10 @@ export function usePushNotifications(participantId?: string, token?: string) {
           });
         }
 
-        const { data: pushToken } = await Notifications.getExpoPushTokenAsync();
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+        const { data: pushToken } = await Notifications.getExpoPushTokenAsync(
+          projectId ? { projectId } : undefined,
+        );
         if (!pushToken) return;
 
         await saveParticipantPushToken(participantId!, token!, pushToken);

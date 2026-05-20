@@ -110,6 +110,12 @@ Primeira versao de teste com eventos, equipes, convocacoes, entrada por codigo/Q
 
 ## 6. Artes da ficha da Play Store
 
+Pasta gerada para upload e revisao:
+
+```text
+playstore-assets/
+```
+
 Assets existentes no projeto:
 
 | Arquivo | Uso sugerido | Status |
