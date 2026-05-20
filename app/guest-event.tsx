@@ -84,7 +84,7 @@ export default function GuestEventScreen() {
       const events = await getGuestEventsByInviteEmail(inviteCode, email);
 
       if (events.length === 0) {
-        Alert.alert('Convocacao nao encontrada', 'Este email nao esta convocado para este evento.');
+        Alert.alert('Convocacao nao encontrada', 'Este email nao esta escalado para este evento.');
         await clearSessionAndLeave();
         return;
       }
@@ -100,7 +100,7 @@ export default function GuestEventScreen() {
       ]);
 
       if (items.length === 0) {
-        Alert.alert('Convocacao nao encontrada', 'Este email nao esta convocado para este evento.');
+        Alert.alert('Convocacao nao encontrada', 'Este email nao esta escalado para este evento.');
         await clearSessionAndLeave();
         return;
       }
@@ -404,7 +404,7 @@ export default function GuestEventScreen() {
             EQUIPE CONVOCADA
           </Text>
           {roster.length === 0 ? (
-            <EmptyState icon={Users} title="Equipe nao disponivel" subtitle="Ainda nao ha outros convocados visiveis." />
+            <EmptyState icon={Users} title="Equipe nao disponivel" subtitle="Ainda nao ha outros escalados visiveis." />
           ) : (
             roster.map((item) => {
               const statusColor = RESPONSE_COLOR[item.response_status] ?? colors.textMuted;

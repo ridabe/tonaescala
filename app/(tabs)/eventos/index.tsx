@@ -93,7 +93,7 @@ export default function EventosScreen() {
       </View>
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: Colors.brand.accent }]}
-        onPress={() => router.push('/events/create')}
+        onPress={() => router.push('/eventos/create')}
         accessibilityRole="button"
         accessibilityLabel="Criar novo evento"
       >
@@ -135,7 +135,7 @@ export default function EventosScreen() {
             title="Nenhum evento"
             subtitle="Crie seu primeiro evento e monte a escala da sua equipe."
             actionLabel="Criar evento"
-            onAction={() => router.push('/events/create')}
+            onAction={() => router.push('/eventos/create')}
           />
         }
         renderItem={({ item: section }) => (
@@ -146,7 +146,7 @@ export default function EventosScreen() {
             {section.data.map((ev) => (
               <View key={ev.id} style={styles.cardWrapper}>
                 <Card
-                  onPress={() => router.push(`/events/${ev.id}`)}
+                  onPress={() => router.push(`/eventos/${ev.id}`)}
                   leftAccent={ev.color}
                   accessibilityLabel={`${ev.title}, ${formatDate(ev.start_date)}`}
                   accessibilityHint="Toque para abrir o evento"

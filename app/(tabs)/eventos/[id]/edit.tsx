@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -10,16 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { createEvent, generateInvite } from '@/lib/events';
-import { useOrganization } from '@/hooks/useOrganization';
+import { fetchEventById, updateEvent } from '@/lib/events';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { analytics } from '@/lib/analytics';
 import { toDatabaseTimestamp } from '@/lib/datetime';
 
 const CATEGORIES = ['Culto', 'Ensaio', 'Conferência', 'Reunião', 'Outro'];
@@ -34,8 +32,8 @@ function displayTime(d: Date) {
 
 type PickerTarget = 'start_date' | 'start_time' | 'end_time' | null;
 
-export default function CreateEventScreen() {
-  const { org } = useOrganization();
+export default function EditEventScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useColorScheme();
 
   const [title, setTitle] = useState('');
@@ -44,9 +42,23 @@ export default function CreateEventScreen() {
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(EVENT_COLORS[0]);
   const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(() => { const d = new Date(); d.setHours(d.getHours() + 2); return d; });
+  const [endDate, setEndDate] = useState(new Date());
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    fetchEventById(id).then((ev) => {
+      if (!ev) return;
+      setTitle(ev.title);
+      setCategory(ev.category ?? '');
+      setLocation(ev.location ?? '');
+      setDescription(ev.description ?? '');
+      setColor(ev.color);
+      setStartDate(new Date(ev.start_date));
+      if (ev.end_date) setEndDate(new Date(ev.end_date));
+    });
+  }, [id]);
 
   function handlePickerChange(_: unknown, selected?: Date) {
     if (!selected) { setPickerTarget(null); return; }
@@ -70,12 +82,10 @@ export default function CreateEventScreen() {
   }
 
   async function handleSave() {
-    if (!title.trim()) { Alert.alert('Título obrigatório'); return; }
-    if (!org) { Alert.alert('Erro', 'Organização não encontrada.'); return; }
+    if (!title.trim() || !id) { Alert.alert('Título obrigatório'); return; }
     setLoading(true);
     try {
-      const ev = await createEvent({
-        organization_id: org.id,
+      await updateEvent(id, {
         title: title.trim(),
         category: category || undefined,
         location: location.trim() || undefined,
@@ -84,11 +94,9 @@ export default function CreateEventScreen() {
         start_date: toDatabaseTimestamp(startDate),
         end_date: toDatabaseTimestamp(endDate),
       });
-      await generateInvite(ev.id);
-      analytics.track('event_created', { event_id: ev.id, organization_id: org.id });
-      router.replace(`/events/${ev.id}`);
+      router.back();
     } catch (e: any) {
-      Alert.alert('Erro ao criar evento', e.message);
+      Alert.alert('Erro ao salvar', e.message);
     } finally {
       setLoading(false);
     }
@@ -101,23 +109,20 @@ export default function CreateEventScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScreenHeader title="Novo evento" fallbackHref="/(tabs)/eventos" />
+      <ScreenHeader title="Editar evento" fallbackHref={`/eventos/${id}`} />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {/* Título */}
         <Label>TÍTULO *</Label>
         <TextInput
           style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-          placeholder="Ex: Culto de Domingo"
-          placeholderTextColor={colors.textSoft}
           value={title}
           onChangeText={setTitle}
-          autoFocus
+          placeholder="Nome do evento"
+          placeholderTextColor={colors.textSoft}
         />
 
-        {/* Categoria */}
         <Label mt>CATEGORIA</Label>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {CATEGORIES.map((c) => (
             <TouchableOpacity
               key={c}
@@ -129,20 +134,18 @@ export default function CreateEventScreen() {
           ))}
         </ScrollView>
 
-        {/* Local */}
         <Label mt>LOCAL</Label>
         <TextInput
           style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-          placeholder="Ex: Templo principal"
-          placeholderTextColor={colors.textSoft}
           value={location}
           onChangeText={setLocation}
+          placeholder="Local do evento"
+          placeholderTextColor={colors.textSoft}
         />
 
-        {/* Data e horários */}
         <Label mt>DATA *</Label>
         <TouchableOpacity
-          style={[styles.input, styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, justifyContent: 'center' }]}
           onPress={() => setPickerTarget('start_date')}
         >
           <Text style={[Typography.body, { color: colors.text }]}>{displayDate(startDate)}</Text>
@@ -150,52 +153,44 @@ export default function CreateEventScreen() {
 
         <View style={styles.timeRow}>
           <View style={styles.timeCol}>
-            <Label>INÍCIO *</Label>
-            <TouchableOpacity
-              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => setPickerTarget('start_time')}
-            >
+            <Label>INÍCIO</Label>
+            <TouchableOpacity style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, justifyContent: 'center' }]} onPress={() => setPickerTarget('start_time')}>
               <Text style={[Typography.body, { color: colors.text }]}>{displayTime(startDate)}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.timeCol}>
             <Label>FIM</Label>
-            <TouchableOpacity
-              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => setPickerTarget('end_time')}
-            >
+            <TouchableOpacity style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, justifyContent: 'center' }]} onPress={() => setPickerTarget('end_time')}>
               <Text style={[Typography.body, { color: colors.text }]}>{displayTime(endDate)}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Cor */}
         <Label mt>COR</Label>
         <View style={styles.colorRow}>
           {EVENT_COLORS.map((c) => (
             <TouchableOpacity
               key={c}
               onPress={() => setColor(c)}
-              style={[styles.colorDot, { backgroundColor: c, borderWidth: color === c ? 3 : 0, borderColor: '#FFF', shadowColor: c, shadowOpacity: color === c ? 0.5 : 0, shadowRadius: 4, shadowOffset: { width: 0, height: 0 }, elevation: color === c ? 6 : 0 }]}
+              style={[styles.colorDot, { backgroundColor: c, borderWidth: color === c ? 3 : 0, borderColor: '#FFF', elevation: color === c ? 6 : 0 }]}
             />
           ))}
         </View>
 
-        {/* Descrição */}
         <Label mt>DESCRIÇÃO</Label>
         <TextInput
           style={[styles.input, styles.textarea, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-          placeholder="Informações adicionais do evento"
-          placeholderTextColor={colors.textSoft}
           value={description}
           onChangeText={setDescription}
+          placeholder="Informações adicionais"
+          placeholderTextColor={colors.textSoft}
           multiline
           numberOfLines={3}
           textAlignVertical="top"
         />
 
         <View style={{ marginTop: Spacing.xl }}>
-          <Button label="Salvar evento" onPress={handleSave} loading={loading} />
+          <Button label="Salvar alterações" onPress={handleSave} loading={loading} />
         </View>
       </ScrollView>
 
@@ -231,18 +226,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     ...Typography.body,
     minHeight: Layout.minTouchTarget,
-    justifyContent: 'center',
   },
-  row: { flexDirection: 'row', alignItems: 'center' },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
-  chipRow: { flexDirection: 'row', marginBottom: 0 },
-  chip: {
-    borderWidth: 1,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    marginRight: Spacing.xs,
-  },
+  chip: { borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, marginRight: Spacing.xs },
   timeRow: { flexDirection: 'row', gap: Spacing.md },
   timeCol: { flex: 1 },
   colorRow: { flexDirection: 'row', gap: Spacing.md },

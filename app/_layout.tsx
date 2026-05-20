@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -20,6 +21,7 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
+      <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
         <StatusBar style="dark" backgroundColor={Colors.light.background} />
         <Stack
@@ -32,14 +34,13 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="setup-organization" />
-          <Stack.Screen name="events" />
           <Stack.Screen name="enter-event" />
           <Stack.Screen name="guest-event" />
           <Stack.Screen name="scan-qr" />
-          <Stack.Screen name="schedule" />
           <Stack.Screen name="+not-found" />
         </Stack>
       </GestureHandlerRootView>
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

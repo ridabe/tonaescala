@@ -98,14 +98,14 @@ Nesta fase, a tabela registra a notificacao no banco. O envio push real entra em
 
 - Recebe `invite_code + email`.
 - Verifica se o evento existe e esta ativo.
-- Verifica se o email esta convocado.
+- Verifica se o email esta escalado.
 - Marca a convocacao como visualizada.
 - Retorna os dados do evento e da convocacao.
 
 `get_assignment_roster_by_invite_email`
 
 - Recebe `invite_code + email`.
-- Verifica se o email esta convocado.
+- Verifica se o email esta escalado.
 - Retorna a lista visivel de convocados do evento.
 - Nao retorna email nem telefone dos outros convocados.
 

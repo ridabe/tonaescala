@@ -49,7 +49,12 @@
       "Bash(findstr \":8081\")",
       "Bash(findstr \"LISTENING\")",
       "Bash(taskkill /PID 1712 /F)",
-      "PowerShell(Stop-Process -Id 1712 -Force)"
+      "PowerShell(Stop-Process -Id 1712 -Force)",
+      "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\schedule\\\\[id].tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\agenda\\\\[id].tsx\")",
+      "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\events\\\\[id].tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id].tsx\")",
+      "Bash(mkdir \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id]\")",
+      "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\events\\\\[id]\\\\add-schedule.tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id]\\\\add-schedule.tsx\")",
+      "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\events\\\\[id]\\\\edit.tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id]\\\\edit.tsx\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"

@@ -37,7 +37,7 @@ export default function EnterEventScreen() {
     try {
       const events = await getGuestEventsByInviteEmail(code, normalizedEmail);
       if (events.length === 0) {
-        Alert.alert('Convocacao nao encontrada', 'Este email nao esta convocado para este evento.');
+        Alert.alert('Convocacao nao encontrada', 'Este email nao esta escalado para este evento.');
         return;
       }
 
@@ -48,7 +48,7 @@ export default function EnterEventScreen() {
     } catch (error: any) {
       const message = String(error?.message ?? '');
       if (message.includes('NOT_INVITED')) {
-        Alert.alert('Convocacao nao encontrada', 'Este email nao esta convocado para este evento.');
+        Alert.alert('Convocacao nao encontrada', 'Este email nao esta escalado para este evento.');
       } else if (message.includes('NOT_FOUND')) {
         Alert.alert('Codigo invalido', 'Evento nao encontrado ou convite expirado.');
       } else {
@@ -73,7 +73,7 @@ export default function EnterEventScreen() {
         </Text>
 
         <Text style={[Typography.caption, { color: colors.textMuted, marginBottom: Spacing.sm }]}>
-          Email convocado *
+          Email escalado *
         </Text>
         <TextInput
           style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}

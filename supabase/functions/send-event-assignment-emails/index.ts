@@ -95,11 +95,11 @@ function buildEmailHtml(params: {
             </td></tr>
           </table>
 
-          <p style="margin:0 0 8px;font-size:15px">Para visualizar e responder sua convocação, acesse o app usando:</p>
+          <p style="margin:0 0 8px;font-size:15px">Para visualizar e responder sua escalação, acesse o app usando:</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0edff;border-radius:8px;padding:16px;margin-bottom:24px">
             <tr><td>
               <p style="margin:0 0 4px;font-size:14px;color:#444"><strong>Código do evento:</strong> <span style="font-family:monospace;font-size:15px;color:#6c47ff">${params.inviteCode}</span></p>
-              <p style="margin:0;font-size:14px;color:#444"><strong>Email convocado:</strong> ${params.inviteeEmail}</p>
+              <p style="margin:0;font-size:14px;color:#444"><strong>Email escalado:</strong> ${params.inviteeEmail}</p>
             </td></tr>
           </table>
 

@@ -118,7 +118,7 @@ export default function NotificacoesScreen() {
 
   async function handleTap(notif: AnyNotification) {
     if (isAdminNotification(notif) && notif.event_id) {
-      router.push(`/events/${notif.event_id}`);
+      router.push(`/eventos/${notif.event_id}`);
     }
 
     if (notif.read) return;

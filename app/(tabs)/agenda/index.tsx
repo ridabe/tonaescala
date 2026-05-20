@@ -182,7 +182,7 @@ export default function AgendaScreen() {
                 <Card
                   onPress={() =>
                     router.push({
-                      pathname: '/schedule/[id]',
+                      pathname: '/agenda/[id]',
                       params: {
                         id: item.schedule_id,
                         event_title: item.event_title,

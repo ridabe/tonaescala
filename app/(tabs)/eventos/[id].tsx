@@ -199,7 +199,7 @@ export default function EventDetailScreen() {
 
   async function handleDeleteAssignment(assignment: EventAssignment) {
     Alert.alert(
-      'Remover convocado',
+      'Remover escalado',
       `Remover ${assignment.invitee_name} desta escala? A pessoa nao conseguira mais responder esta convocacao.`,
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -211,7 +211,7 @@ export default function EventDetailScreen() {
               await deleteEventAssignment(assignment.assignment_id);
               setAssignments((prev) => prev.filter((a) => a.assignment_id !== assignment.assignment_id));
             } catch (e: any) {
-              Alert.alert('Erro', e.message ?? 'Nao foi possivel remover o convocado.');
+              Alert.alert('Erro', e.message ?? 'Nao foi possivel remover o escalado.');
             }
           },
         },
@@ -221,7 +221,7 @@ export default function EventDetailScreen() {
 
   function handleScheduleParticipant(participant: EventParticipant) {
     router.push({
-      pathname: '/events/[id]/add-schedule',
+      pathname: '/eventos/[id]/add-schedule',
       params: {
         id,
         participant_id: participant.participant_id,
@@ -277,7 +277,7 @@ export default function EventDetailScreen() {
       );
     } catch (e: any) {
       const msg =
-        e.message === 'NO_RECIPIENTS' ? 'Nenhum convocado com email válido encontrado.'
+        e.message === 'NO_RECIPIENTS' ? 'Nenhum escalado com email válido encontrado.'
         : e.message === 'NOT_AUTHORIZED' ? 'Sem permissão para enviar neste evento.'
         : e.message ?? 'Não foi possível enviar os emails.';
       Alert.alert('Erro', msg);
@@ -389,20 +389,17 @@ export default function EventDetailScreen() {
             accessibilityState={{ selected: tab === t }}
             accessibilityLabel={t === 'escala' ? 'Escala' : t === 'equipes' ? 'Equipes' : t === 'conflitos' ? 'Conflitos' : t === 'convidados' ? 'Presenças' : 'Informações'}
           >
-            {t === 'escala' && <ClipboardList size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
-            {t === 'equipes' && <Users size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
+            {t === 'escala' && <ClipboardList size={22} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
+            {t === 'equipes' && <Users size={22} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
             {t === 'conflitos' && (
               <AlertTriangle
-                size={16}
+                size={22}
                 color={tab === t ? primary : conflictCount > 0 ? Colors.status.warning : colors.textMuted}
                 strokeWidth={2}
               />
             )}
-            {t === 'convidados' && <UserCheck size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
-            {t === 'info' && <Info size={16} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
-            <Text style={[Typography.caption, { color: tab === t ? primary : colors.textMuted, marginTop: 2, textTransform: 'capitalize' }]}>
-              {t === 'escala' ? 'Escala' : t === 'equipes' ? 'Equipes' : t === 'conflitos' ? 'Conflitos' : t === 'convidados' ? 'Presenças' : 'Info'}
-            </Text>
+            {t === 'convidados' && <UserCheck size={22} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
+            {t === 'info' && <Info size={22} color={tab === t ? primary : colors.textMuted} strokeWidth={2} />}
           </TouchableOpacity>
         ))}
       </View>
@@ -410,7 +407,7 @@ export default function EventDetailScreen() {
       {/* Tab content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.tabContent, { paddingBottom: 120 + insets.bottom }]}
+        contentContainerStyle={styles.tabContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
       >
         {/* ── ESCALA ── */}
@@ -469,7 +466,7 @@ export default function EventDetailScreen() {
                 {filteredAssignments.length === 0 ? (
                   <EmptyState
                     icon={ClipboardList}
-                    title="Nenhum convocado neste filtro"
+                    title="Nenhum escalado neste filtro"
                     subtitle="Troque o filtro para ver outros status da escala."
                   />
                 ) : null}
@@ -532,10 +529,10 @@ export default function EventDetailScreen() {
                 })}
                 <View style={{ marginTop: Spacing.md }}>
                   <Button
-                    label="Adicionar convocado"
+                    label="Adicionar escalado"
                     variant="outline"
                     icon={Plus}
-                    onPress={() => router.push(`/events/${id}/add-schedule`)}
+                    onPress={() => router.push(`/eventos/${id}/add-schedule`)}
                   />
                 </View>
                 <View style={{ marginTop: Spacing.sm }}>
@@ -568,10 +565,10 @@ export default function EventDetailScreen() {
             ) : schedules.length === 0 ? (
               <EmptyState
                 icon={ClipboardList}
-                title="Nenhum convocado"
-                subtitle="Adicione pessoas com email, equipe e funcao para montar a escala convocada."
+                title="Nenhum escalado"
+                subtitle="Adicione pessoas com email, equipe e funcao para montar a escala escalada."
                 actionLabel="Adicionar à escala"
-                onAction={() => router.push(`/events/${id}/add-schedule`)}
+                onAction={() => router.push(`/eventos/${id}/add-schedule`)}
               />
             ) : (
               <>
@@ -620,7 +617,7 @@ export default function EventDetailScreen() {
                     label="Adicionar à escala"
                     variant="outline"
                     icon={Plus}
-                    onPress={() => router.push(`/events/${id}/add-schedule`)}
+                    onPress={() => router.push(`/eventos/${id}/add-schedule`)}
                   />
                 </View>
               </>
@@ -703,7 +700,7 @@ export default function EventDetailScreen() {
                 title="Nenhum convidado ainda"
                 subtitle="Compartilhe o código de convite para que participantes confirmem presença."
                 actionLabel="Compartilhar convite"
-                onAction={() => router.push(`/events/${id}/invite`)}
+                onAction={() => router.push(`/eventos/${id}/invite`)}
               />
             ) : (
               <>
@@ -798,19 +795,19 @@ export default function EventDetailScreen() {
               </View>
             )}
             <View style={{ marginTop: Spacing.lg }}>
-              <Button label="Editar evento" variant="outline" onPress={() => router.push(`/events/${id}/edit`)} />
+              <Button label="Editar evento" variant="outline" onPress={() => router.push(`/eventos/${id}/edit`)} />
             </View>
           </View>
         )}
       </ScrollView>
 
-      {/* Floating share button */}
-      <View style={[styles.floatingBar, { paddingBottom: Spacing.xl + insets.bottom }]}>
+      {/* Share button footer */}
+      <View style={[styles.footer, { paddingBottom: Spacing.md + insets.bottom, borderTopColor: colors.border }]}>
         <Button
           label="Compartilhar convite"
           variant="accent"
           icon={Share2}
-          onPress={() => router.push(`/events/${id}/invite`)}
+          onPress={() => router.push(`/eventos/${id}/invite`)}
         />
       </View>
 
@@ -820,7 +817,7 @@ export default function EventDetailScreen() {
           <View style={[styles.menuBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => { setMenuVisible(false); router.push(`/events/${id}/edit`); }}
+              onPress={() => { setMenuVisible(false); router.push(`/eventos/${id}/edit`); }}
             >
               <Text style={[Typography.body, { color: colors.text }]}>Editar evento</Text>
             </TouchableOpacity>
@@ -849,7 +846,7 @@ export default function EventDetailScreen() {
             </Text>
             <View style={{ gap: Spacing.sm, marginBottom: Spacing.lg }}>
               <View style={styles.emailSummaryRow}>
-                <Text style={[Typography.body, { color: colors.textMuted }]}>Convocados</Text>
+                <Text style={[Typography.body, { color: colors.textMuted }]}>Escalados</Text>
                 <Text style={[Typography.bodyStrong, { color: colors.text }]}>{assignments.length}</Text>
               </View>
               <View style={styles.emailSummaryRow}>
@@ -868,7 +865,7 @@ export default function EventDetailScreen() {
               )}
             </View>
             <Text style={[Typography.caption, { color: colors.textSoft, marginBottom: Spacing.lg }]}>
-              Cada convocado receberá um email com os dados da própria convocação e o código de acesso ao evento.
+              Cada escalado receberá um email com os dados da própria escala e o código de acesso ao evento.
             </Text>
             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
               <View style={{ flex: 1 }}>
@@ -948,14 +945,13 @@ const styles = StyleSheet.create({
   },
   tabBtn: {
     flex: 1,
-    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabContent: { padding: Spacing.lg, gap: Spacing.sm },
+  tabContent: { padding: Spacing.lg, paddingBottom: Spacing.xl, gap: Spacing.sm },
   scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   statusBadge: {
     paddingHorizontal: Spacing.sm,
@@ -963,13 +959,10 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   deleteBtn: { padding: 4 },
-  floatingBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  footer: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
   },
   menuOverlay: {
     flex: 1,

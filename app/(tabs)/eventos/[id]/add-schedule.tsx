@@ -80,11 +80,11 @@ export default function AddScheduleScreen() {
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert('Nome obrigatorio', 'Informe o nome do convocado.');
+      Alert.alert('Nome obrigatorio', 'Informe o nome do escalado.');
       return;
     }
     if (!email.trim()) {
-      Alert.alert('Email obrigatorio', 'Informe o email que o convidado usara para acessar a convocacao.');
+      Alert.alert('Email obrigatorio', 'Informe o email que o escalado usara para acessar a escala.');
       return;
     }
     if (!id) return;
@@ -118,10 +118,10 @@ export default function AddScheduleScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScreenHeader title="Adicionar convocado" fallbackHref={`/events/${id}`} />
+      <ScreenHeader title="Adicionar escalado" fallbackHref={`/eventos/${id}`} />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Label>NOME DO CONVOCADO *</Label>
+        <Label>NOME DO ESCALADO *</Label>
         <TextInput
           style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
           placeholder="Ex: Alexandre Silva"

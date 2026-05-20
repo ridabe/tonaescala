@@ -76,7 +76,7 @@ export default function InviteScreen() {
     if (!event?.invite_code) return;
     Alert.alert(
       'Remover convite',
-      'O codigo atual deixara de funcionar. Convocados ainda existentes precisarao de um novo codigo para acessar.',
+      'O codigo atual deixara de funcionar. Escalados ainda existentes precisarao de um novo codigo para acessar.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -103,7 +103,7 @@ export default function InviteScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Convite do evento" fallbackHref={`/events/${id}`} />
+      <ScreenHeader title="Convite do evento" fallbackHref={`/eventos/${id}`} />
 
       <View style={styles.content}>
         <Text style={[Typography.titleSm, { color: colors.text, textAlign: 'center' }]}>
