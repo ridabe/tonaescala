@@ -802,7 +802,7 @@ export default function EventDetailScreen() {
       </ScrollView>
 
       {/* Share button footer */}
-      <View style={[styles.footer, { paddingBottom: Spacing.md + insets.bottom, borderTopColor: colors.border }]}>
+      <View style={[styles.footer, { paddingBottom: Spacing.md, borderTopColor: colors.border }]}>
         <Button
           label="Compartilhar convite"
           variant="accent"
