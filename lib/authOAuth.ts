@@ -9,6 +9,23 @@ WebBrowser.maybeCompleteAuthSession();
 
 export const authRedirectTo = 'tonaescala://auth/callback';
 
+function dismissOAuthBrowser() {
+  try {
+    const dismissResult = WebBrowser.dismissBrowser() as unknown;
+    if (dismissResult && typeof (dismissResult as Promise<unknown>).catch === 'function') {
+      (dismissResult as Promise<unknown>).catch(() => {});
+    }
+  } catch {
+    // Browser may already be closed or unavailable on the current platform.
+  }
+
+  try {
+    WebBrowser.dismissAuthSession();
+  } catch {
+    // Auth session dismissal is best effort.
+  }
+}
+
 export async function createSessionFromUrl(url: string) {
   const { params, errorCode } = QueryParams.getQueryParams(url);
 
@@ -44,6 +61,7 @@ export async function signInWithGoogle() {
   });
 
   if (error) throw error;
+  if (!data.url) throw new Error('Nao foi possivel iniciar o login com Google.');
 
   if (__DEV__) {
     console.log('[OAuth] redirectTo', returnUrl);
@@ -56,8 +74,7 @@ export async function signInWithGoogle() {
       if (__DEV__) {
         console.log('[OAuth] deep link received', url);
       }
-      WebBrowser.dismissBrowser().catch(() => {});
-      WebBrowser.dismissAuthSession();
+      dismissOAuthBrowser();
       resolve({ type: 'success', url });
     });
   });
@@ -65,13 +82,13 @@ export async function signInWithGoogle() {
   let browserResult: Promise<WebBrowser.WebBrowserAuthSessionResult | WebBrowser.WebBrowserResult>;
 
   if (Platform.OS === 'android') {
-    browserResult = WebBrowser.openBrowserAsync(data.url ?? '', {
+    browserResult = WebBrowser.openBrowserAsync(data.url, {
       createTask: false,
       showTitle: true,
       toolbarColor: '#0F766E',
     });
   } else {
-    browserResult = WebBrowser.openAuthSessionAsync(data.url ?? '', returnUrl);
+    browserResult = WebBrowser.openAuthSessionAsync(data.url, returnUrl);
   }
 
   const timeoutResult = new Promise<{ type: 'timeout' }>((resolve) => {
