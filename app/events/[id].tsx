@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import {
   Alert,
+  ActivityIndicator,
   Modal,
   RefreshControl,
   ScrollView,
@@ -13,12 +14,13 @@ import {
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   CalendarDays, MapPin, MoreVertical, Plus, Share2, Tag,
-  Users, ClipboardList, Info, Trash2, Clock, AlertTriangle, UserCheck,
+  Users, ClipboardList, Info, Trash2, Clock, AlertTriangle, UserCheck, Mail,
 } from 'lucide-react-native';
 import { fetchEventById, archiveEvent, deleteEvent } from '@/lib/events';
 import { fetchTeams, createTeam, deleteTeam } from '@/lib/teams';
 import { fetchSchedules, deleteSchedule } from '@/lib/schedules';
 import { deleteEventAssignment, getEventAssignmentsForOrganizer, type EventAssignment } from '@/lib/assignments';
+import { createEmailCampaign, triggerEmailCampaign, getEmailCampaigns, type EmailCampaign } from '@/lib/emailCampaigns';
 import { getEventParticipantsForOrganizer, type EventParticipant } from '@/lib/participants';
 import { supabase } from '@/lib/supabase';
 import type { Event, Team, Schedule } from '@/lib/types';
@@ -91,6 +93,9 @@ export default function EventDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all');
+  const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
+  const [emailModalVisible, setEmailModalVisible] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
 
   // New team modal
   const [teamModalVisible, setTeamModalVisible] = useState(false);
@@ -101,16 +106,18 @@ export default function EventDetailScreen() {
     if (!id) return;
     setLoadError(null);
     try {
-      const [ev, sc, pts, asg] = await Promise.all([
+      const [ev, sc, pts, asg, campaigns] = await Promise.all([
         fetchEventById(id),
         fetchSchedules(id),
         getEventParticipantsForOrganizer(id),
         getEventAssignmentsForOrganizer(id),
+        getEmailCampaigns(id).catch(() => [] as EmailCampaign[]),
       ]);
       setEvent(ev);
       setSchedules(sc);
       setParticipants(pts);
       setAssignments(asg);
+      setEmailCampaigns(campaigns);
       if (org) {
         const t = await fetchTeams(org.id);
         setTeams(t);
@@ -250,6 +257,30 @@ export default function EventDetailScreen() {
       Alert.alert('Erro', e.message);
     } finally {
       setTeamLoading(false);
+    }
+  }
+
+  async function handleSendEmails() {
+    if (!id || emailSending) return;
+    setEmailSending(true);
+    try {
+      const campaignId = await createEmailCampaign(id);
+      const result = await triggerEmailCampaign(id, campaignId);
+      const updated = await getEmailCampaigns(id).catch(() => emailCampaigns);
+      setEmailCampaigns(updated);
+      setEmailModalVisible(false);
+      Alert.alert(
+        'Emails enviados',
+        `${result.sent} enviado${result.sent !== 1 ? 's' : ''}${result.failed > 0 ? ` · ${result.failed} falha${result.failed !== 1 ? 's' : ''}` : ''}.`,
+      );
+    } catch (e: any) {
+      const msg =
+        e.message === 'NO_RECIPIENTS' ? 'Nenhum convocado com email válido encontrado.'
+        : e.message === 'NOT_AUTHORIZED' ? 'Sem permissão para enviar neste evento.'
+        : e.message ?? 'Não foi possível enviar os emails.';
+      Alert.alert('Erro', msg);
+    } finally {
+      setEmailSending(false);
     }
   }
 
@@ -505,6 +536,32 @@ export default function EventDetailScreen() {
                     onPress={() => router.push(`/events/${id}/add-schedule`)}
                   />
                 </View>
+                <View style={{ marginTop: Spacing.sm }}>
+                  <Button
+                    label="Enviar convites por email"
+                    variant="outline"
+                    icon={Mail}
+                    onPress={() => setEmailModalVisible(true)}
+                  />
+                </View>
+                {emailCampaigns.length > 0 && (
+                  <Card>
+                    <View style={{ gap: Spacing.xs }}>
+                      <Text style={[Typography.caption, { color: colors.textMuted }]}>Último envio</Text>
+                      <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                        {emailCampaigns[0].sent_count} enviado{emailCampaigns[0].sent_count !== 1 ? 's' : ''}
+                        {emailCampaigns[0].failed_count > 0
+                          ? ` · ${emailCampaigns[0].failed_count} falha${emailCampaigns[0].failed_count !== 1 ? 's' : ''}`
+                          : ''}
+                      </Text>
+                      <Text style={[Typography.caption, { color: colors.textSoft }]}>
+                        {new Date(emailCampaigns[0].created_at).toLocaleString('pt-BR', {
+                          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+                  </Card>
+                )}
               </>
             ) : schedules.length === 0 ? (
               <EmptyState
@@ -777,6 +834,64 @@ export default function EventDetailScreen() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Email campaign modal */}
+      <Modal transparent visible={emailModalVisible} animationType="slide" onRequestClose={() => !emailSending && setEmailModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          onPress={() => !emailSending && setEmailModalVisible(false)}
+          activeOpacity={1}
+        >
+          <View style={[styles.sheetBox, { backgroundColor: colors.surface }]}>
+            <Text style={[Typography.titleSm, { color: colors.text, marginBottom: Spacing.md }]}>
+              Enviar convites por email
+            </Text>
+            <View style={{ gap: Spacing.sm, marginBottom: Spacing.lg }}>
+              <View style={styles.emailSummaryRow}>
+                <Text style={[Typography.body, { color: colors.textMuted }]}>Convocados</Text>
+                <Text style={[Typography.bodyStrong, { color: colors.text }]}>{assignments.length}</Text>
+              </View>
+              <View style={styles.emailSummaryRow}>
+                <Text style={[Typography.body, { color: colors.textMuted }]}>Com email</Text>
+                <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                  {assignments.filter((a) => a.invitee_email).length}
+                </Text>
+              </View>
+              {emailCampaigns.length > 0 && (
+                <View style={[styles.emailSummaryRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: Spacing.sm, marginTop: Spacing.xs }]}>
+                  <Text style={[Typography.caption, { color: colors.textMuted }]}>Enviado anteriormente</Text>
+                  <Text style={[Typography.caption, { color: colors.textSoft }]}>
+                    {new Date(emailCampaigns[0].created_at).toLocaleDateString('pt-BR')}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={[Typography.caption, { color: colors.textSoft, marginBottom: Spacing.lg }]}>
+              Cada convocado receberá um email com os dados da própria convocação e o código de acesso ao evento.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="Cancelar"
+                  variant="ghost"
+                  onPress={() => setEmailModalVisible(false)}
+                  disabled={emailSending}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                {emailSending ? (
+                  <View style={[styles.sendingBtn, { backgroundColor: Colors.brand.primary }]}>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={[Typography.bodyStrong, { color: '#fff' }]}>Enviando…</Text>
+                  </View>
+                ) : (
+                  <Button label="Enviar" onPress={handleSendEmails} />
+                )}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* New team modal */}
       <Modal transparent visible={teamModalVisible} animationType="slide" onRequestClose={() => setTeamModalVisible(false)}>
         <TouchableOpacity style={styles.menuOverlay} onPress={() => setTeamModalVisible(false)} activeOpacity={1}>
@@ -899,6 +1014,20 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+  },
+  emailSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sendingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    minHeight: Layout.minTouchTarget,
   },
   participantActions: {
     flexDirection: 'row',
