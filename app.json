@@ -2,7 +2,7 @@
   "expo": {
     "name": "ToNaEscala",
     "slug": "tonaescala",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tonaescala",
@@ -17,12 +17,12 @@
       "bundleIdentifier": "com.tonaescala.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "O Afinador usa o microfone para detectar a nota tocada no instrumento.",
-        "NSFaceIDUsageDescription": "O ToNaEscala usa Face ID para autenticar seu login com segurança."
+        "NSFaceIDUsageDescription": "O ToNaEscala usa Biometria para autenticar seu login com segurança."
       }
     },
     "android": {
       "package": "com.tonaescala.app",
-      "versionCode": 7,
+      "versionCode": 8,
       "newArchEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",

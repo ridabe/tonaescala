@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Platform,
   ScrollView,
@@ -10,6 +11,7 @@ import {
 } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
+import { useMicrophonePermissions } from 'expo-camera';
 import { Mic, MicOff, RotateCcw } from 'lucide-react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
@@ -130,18 +132,25 @@ function freqToNote(f){
   return{note:names[n],octave:Math.floor(h/12),cents:Math.max(-50,Math.min(50,cents)),hz:Math.round(f*10)/10};
 }
 var ctx,analyser,fbuf,stream,running=false,smooth=0;
+function send(obj){try{window.ReactNativeWebView.postMessage(JSON.stringify(obj));}catch(e){}}
 function start(){
-  navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:false,autoGainControl:false,echoCancellation:false},video:false})
-  .then(function(s){
-    stream=s;
-    ctx=new(window.AudioContext||window.webkitAudioContext)();
-    analyser=ctx.createAnalyser();analyser.fftSize=2048;
-    ctx.createMediaStreamSource(s).connect(analyser);
-    fbuf=new Float32Array(analyser.fftSize);
-    running=true;
-    window.ReactNativeWebView.postMessage(JSON.stringify({type:'started'}));
-    tick();
-  }).catch(function(e){window.ReactNativeWebView.postMessage(JSON.stringify({type:'error',msg:e.message}));});
+  try {
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      send({type:'error',msg:'getUserMedia not supported — insecure context'});
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:false,autoGainControl:false,echoCancellation:false},video:false})
+    .then(function(s){
+      stream=s;
+      ctx=new(window.AudioContext||window.webkitAudioContext)();
+      analyser=ctx.createAnalyser();analyser.fftSize=2048;
+      ctx.createMediaStreamSource(s).connect(analyser);
+      fbuf=new Float32Array(analyser.fftSize);
+      running=true;
+      send({type:'started'});
+      tick();
+    }).catch(function(e){send({type:'error',msg:e.message||'getUserMedia denied'});});
+  } catch(e){send({type:'error',msg:e.message||'start exception'});}
 }
 function stop(){
   running=false;smooth=0;
@@ -161,10 +170,10 @@ function tick(){
   if(r.f>60&&r.f<1500){
     smooth=smooth?smooth*0.65+r.f*0.35:r.f;
     var info=freqToNote(smooth);
-    if(info)window.ReactNativeWebView.postMessage(JSON.stringify({type:'pitch',note:info.note,octave:info.octave,cents:info.cents,hz:info.hz,vol:vol}));
+    if(info)send({type:'pitch',note:info.note,octave:info.octave,cents:info.cents,hz:info.hz,vol:vol});
   } else {
     smooth=0;
-    window.ReactNativeWebView.postMessage(JSON.stringify({type:'silence',vol:vol}));
+    send({type:'silence',vol:vol});
   }
 }
 function onMsg(raw){try{var m=JSON.parse(raw);if(m.cmd==='start')start();else if(m.cmd==='stop')stop();}catch(e){}}
@@ -183,6 +192,7 @@ interface PitchData {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AfinadorScreen() {
   const { colors } = useColorScheme();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
   const [mode, setMode] = useState<Mode>('Violão');
   const [listening, setListening] = useState(false);
@@ -191,6 +201,7 @@ export default function AfinadorScreen() {
   const [activeString, setActiveString] = useState<number | null>(null);
 
   const webviewRef = useRef<WebView>(null);
+  const [webviewReady, setWebviewReady] = useState(false);
   const needleAnim = useRef(new Animated.Value(-90)).current;
   const [needlePos, setNeedlePos] = useState(needleTip(-90));
   const volBars = useRef(
@@ -248,6 +259,11 @@ export default function AfinadorScreen() {
           setVolume(msg.vol ?? 0);
         } else if (msg.type === 'error') {
           setListening(false);
+          Alert.alert(
+            'Permissão negada',
+            'O afinador precisa de acesso ao microfone. Verifique as permissões do aplicativo nas configurações do celular.',
+            [{ text: 'OK' }],
+          );
         }
       } catch {
         // ignore parse errors
@@ -257,16 +273,31 @@ export default function AfinadorScreen() {
   );
 
   // ─── Controls ─────────────────────────────────────────────────────────────
-  function toggleListening() {
+  async function toggleListening() {
     if (listening) {
-      webviewRef.current?.injectJavaScript(`onMsg('{"cmd":"stop"}')`);
+      webviewRef.current?.injectJavaScript(`onMsg('{"cmd":"stop"}');true`);
       setListening(false);
       setPitch(null);
       setActiveString(null);
       animateNeedle(0);
-    } else {
-      webviewRef.current?.injectJavaScript(`onMsg('{"cmd":"start"}')`);
+      return;
     }
+
+    if (!micPermission?.granted) {
+      const result = await requestMicPermission();
+      if (!result.granted) {
+        Alert.alert(
+          'Permissão necessária',
+          result.canAskAgain
+            ? 'O afinador precisa acessar o microfone para detectar a nota tocada.'
+            : 'Acesso ao microfone foi negado. Ative nas Configurações do aparelho > Aplicativos > ToNaEscala > Permissões.',
+          [{ text: 'OK' }],
+        );
+        return;
+      }
+    }
+
+    webviewRef.current?.injectJavaScript(`onMsg('{"cmd":"start"}');true`);
   }
 
   function reset() {
@@ -511,9 +542,13 @@ export default function AfinadorScreen() {
           <TouchableOpacity
             style={[
               styles.btnMain,
-              { backgroundColor: listening ? Colors.status.dangerSoft : Colors.brand.primary },
+              {
+                backgroundColor: listening ? Colors.status.dangerSoft : Colors.brand.primary,
+                opacity: webviewReady ? 1 : 0.5,
+              },
             ]}
             onPress={toggleListening}
+            disabled={!webviewReady}
             accessibilityRole="button"
             accessibilityLabel={listening ? 'Pausar afinador' : 'Iniciar afinador'}
           >
@@ -541,15 +576,15 @@ export default function AfinadorScreen() {
       <WebView
         ref={webviewRef}
         style={styles.hidden}
-        source={{ html: TUNER_HTML }}
+        source={{ html: TUNER_HTML, baseUrl: 'https://localhost' }}
         javaScriptEnabled
         mediaPlaybackRequiresUserAction={false}
         allowsInlineMediaPlayback
         originWhitelist={['*']}
         onMessage={handleMessage}
+        onLoadEnd={() => setWebviewReady(true)}
         {...(Platform.OS === 'android'
           ? {
-              // Android: auto-grant microphone access inside WebView
               onPermissionRequest: (e: any) => {
                 e.nativeEvent.request.grant(e.nativeEvent.request.resources);
               },

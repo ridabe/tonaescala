@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { Music, Plus, Search } from 'lucide-react-native';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -43,7 +44,7 @@ export default function BibliotecaScreen() {
     }
   }, [org]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(load);
 
   const filtered = query.trim()
     ? songs.filter(

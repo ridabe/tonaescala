@@ -74,7 +74,11 @@
       "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); d.results.forEach\\(r => console.log\\(r.trackName, '-', r.artistName\\)\\)\")",
       "PowerShell($r = Invoke-RestMethod \"https://itunes.apple.com/search?term=fernandinho&media=music&limit=5&country=BR\"; $r.results | Select-Object trackName, artistName)",
       "PowerShell($r = Invoke-RestMethod \"https://itunes.apple.com/search?term=fernandinho&media=music&limit=5&country=BR\"; $r.resultCount; $r.results | ForEach-Object { \"$\\($_.trackName\\) - $\\($_.artistName\\)\" })",
-      "PowerShell($r = Invoke-RestMethod \"https://api.lyrics.ovh/v1/Fernandinho/Galileu\"; $r.lyrics | Select-Object -First 1)"
+      "PowerShell($r = Invoke-RestMethod \"https://api.lyrics.ovh/v1/Fernandinho/Galileu\"; $r.lyrics | Select-Object -First 1)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); const keys = Object.keys\\({...p.dependencies,...p.devDependencies}\\); console.log\\(keys.filter\\(k => k.includes\\('expo-av'\\) || k.includes\\('expo-perm'\\) || k.includes\\('expo-camera'\\) || k.includes\\('expo-media'\\)\\)\\)\")",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\(JSON.stringify\\({...p.dependencies,...p.devDependencies}, null, 2\\)\\)\")",
+      "Bash(node -e \"const p = require\\('./app.json'\\); console.log\\(JSON.stringify\\(p.expo.plugins, null, 2\\)\\)\")",
+      "Bash(node -e \"const p = require\\('./app.json'\\); console.log\\(JSON.stringify\\(p.expo?.android, null, 2\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"

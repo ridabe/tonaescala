@@ -18,7 +18,7 @@ export default function Index() {
     );
   }
 
-  if (session) return <Redirect href="/(tabs)/eventos" />;
+  if (session) return <Redirect href="/(tabs)/agenda" />;
   if (assignmentSession) return <Redirect href="/guest-event" />;
   if (participantSession) return <Redirect href="/guest-event" />;
   return <Redirect href="/(auth)/login" />;

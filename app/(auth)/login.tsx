@@ -23,9 +23,8 @@ import {
   QrCode,
   ShieldCheck,
 } from 'lucide-react-native';
-import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
-import { createSessionFromUrl, signInWithGoogle } from '@/lib/authOAuth';
+import { signInWithGoogle } from '@/lib/authOAuth';
 import {
   authenticate,
   enableBiometric,
@@ -81,7 +80,6 @@ const HERO_SLIDES = [
 
 export default function LoginScreen() {
   const { colors } = useColorScheme();
-  const url = Linking.useLinkingURL();
 
   const [mode, setMode] = useState<Mode>('options');
   const [activeSlide, setActiveSlide] = useState(0);
@@ -125,12 +123,6 @@ export default function LoginScreen() {
     return () => loop.stop();
   }, [pulseAnim]);
 
-  useEffect(() => {
-    if (!url) return;
-    createSessionFromUrl(url).catch((error) => {
-      Alert.alert('Erro ao entrar', error.message ?? 'Não foi possível concluir o login.');
-    });
-  }, [url]);
 
   useEffect(() => {
     async function checkBiometric() {
