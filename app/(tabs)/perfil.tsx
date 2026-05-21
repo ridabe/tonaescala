@@ -4,19 +4,14 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
-  ChevronRight,
   CreditCard,
   Fingerprint,
   LogOut,
   Mail,
-  Music,
   ShieldCheck,
   Sparkles,
   UserRound,
-  Guitar,
-  BookUser,
 } from 'lucide-react-native';
-import { router } from 'expo-router';
 import { useSession } from '@/hooks/useSession';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -201,35 +196,12 @@ export default function PerfilScreen() {
           </View>
         </View>
 
-        <SectionTitle label="Configuracoes" />
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <NavRow
-            icon={BookUser}
-            label="Agenda de Contatos"
-            subtitle="Pessoas para escalar rapidamente"
-            onPress={() => router.push('/contatos' as any)}
-          />
-          <NavRow
-            icon={Music}
-            label="Biblioteca de Musicas"
-            subtitle="Gerenciar catalogo da organizacao"
-            onPress={() => router.push('/musicas')}
-          />
-          <NavRow
-            icon={Guitar}
-            label="Afinador"
-            subtitle="Afinador cromatico para musicos"
-            onPress={() => router.push('/afinador')}
-            last
-          />
-        </View>
-
-        {biometricAvailable && (
+{biometricAvailable && (
           <>
             <SectionTitle label="Seguranca" />
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.toggleRow}>
-                <View style={[styles.navIcon, { backgroundColor: Colors.brand.primarySoft }]}>
+                <View style={[styles.iconWrap, { backgroundColor: Colors.brand.primarySoft }]}>
                   <Fingerprint size={20} color={Colors.brand.primary} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -281,38 +253,6 @@ function SectionTitle({ label }: { label: string }) {
   );
 }
 
-function NavRow({
-  icon: Icon,
-  label,
-  subtitle,
-  onPress,
-  last,
-}: {
-  icon: typeof Music;
-  label: string;
-  subtitle: string;
-  onPress: () => void;
-  last?: boolean;
-}) {
-  const { colors } = useColorScheme();
-  return (
-    <TouchableOpacity
-      style={[styles.navRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <View style={[styles.navIcon, { backgroundColor: Colors.brand.primarySoft }]}>
-        <Icon size={20} color={Colors.brand.primary} strokeWidth={2} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[Typography.bodyStrong, { color: colors.text }]}>{label}</Text>
-        <Text style={[Typography.caption, { color: colors.textMuted }]}>{subtitle}</Text>
-      </View>
-      <ChevronRight size={18} color={colors.textMuted} strokeWidth={2} />
-    </TouchableOpacity>
-  );
-}
 
 function InfoRow({
   icon: Icon,
@@ -420,14 +360,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginTop: Spacing.md,
   },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    minHeight: 64,
-  },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -436,7 +368,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     minHeight: 64,
   },
-  navIcon: {
+  iconWrap: {
     width: 40,
     height: 40,
     borderRadius: Radius.md,

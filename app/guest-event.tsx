@@ -10,9 +10,12 @@ import {
   RefreshControl,
   Modal,
   TextInput,
+  Linking,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { CalendarDays, MapPin, Clock, Check, X, LogOut, Music, Users } from 'lucide-react-native';
+import { CalendarDays, ChevronRight, ExternalLink, MapPin, Clock, Check, X, LogOut, Music, Play, Users } from 'lucide-react-native';
+import { buildCifrasClubUrl, buildYouTubeSearchUrl, extractYouTubeLinks } from '@/lib/cifrasclub';
 import {
   getAssignmentRosterByGuestEventEmail,
   getAssignmentsByGuestEventEmail,
@@ -69,6 +72,7 @@ export default function GuestEventScreen() {
   const [declineTarget, setDeclineTarget] = useState<GuestAssignment | null>(null);
   const [declineReason, setDeclineReason] = useState('');
   const [eventSongs, setEventSongs] = useState<GuestEventSong[]>([]);
+  const [selectedSong, setSelectedSong] = useState<GuestEventSong | null>(null);
 
   const load = useCallback(async (showLoader = true, eventId?: string | null) => {
     if (showLoader) setLoading(true);
@@ -319,7 +323,13 @@ export default function GuestEventScreen() {
             {eventSongs.map((song) => {
               const activeKey = song.selected_key ?? song.default_key;
               return (
-                <View key={song.song_id} style={[styles.songRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  key={song.song_id}
+                  style={[styles.songRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => setSelectedSong(song)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ver detalhes de ${song.title}`}
+                >
                   <Music size={18} color={Colors.brand.primary} strokeWidth={2} style={{ marginTop: 2 }} />
                   <View style={{ flex: 1 }}>
                     <Text style={[Typography.bodyStrong, { color: colors.text }]} numberOfLines={1}>
@@ -338,7 +348,8 @@ export default function GuestEventScreen() {
                       </Text>
                     </View>
                   ) : null}
-                </View>
+                  <ChevronRight size={16} color={colors.textMuted} strokeWidth={2} style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -471,6 +482,16 @@ export default function GuestEventScreen() {
         </View>
       </ScrollView>
 
+      <Modal visible={Boolean(selectedSong)} animationType="slide" onRequestClose={() => setSelectedSong(null)}>
+        {selectedSong ? (
+          <SongDetailSheet
+            song={selectedSong}
+            colors={colors}
+            onClose={() => setSelectedSong(null)}
+          />
+        ) : null}
+      </Modal>
+
       <Modal transparent visible={Boolean(declineTarget)} animationType="slide" onRequestClose={() => setDeclineTarget(null)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.sheetBox, { backgroundColor: colors.surface }]}>
@@ -504,6 +525,115 @@ export default function GuestEventScreen() {
           </View>
         </View>
       </Modal>
+    </View>
+  );
+}
+
+function SongDetailSheet({
+  song,
+  colors,
+  onClose,
+}: {
+  song: GuestEventSong;
+  colors: ReturnType<typeof import('@/hooks/useColorScheme').useColorScheme>['colors'];
+  onClose: () => void;
+}) {
+  const activeKey = song.selected_key ?? song.default_key;
+  const hasContent = Boolean(song.chords || song.lyrics);
+  const cifrasClubUrl = song.artist
+    ? buildCifrasClubUrl(song.artist, song.title)
+    : buildCifrasClubUrl(song.title, song.title);
+  const ytLinks = extractYouTubeLinks(song.links ?? []);
+  const ytUrl = ytLinks[0] ?? (song.artist ? buildYouTubeSearchUrl(song.artist, song.title) : null);
+
+  return (
+    <View style={[sheetStyles.container, { backgroundColor: colors.background }]}>
+      <View style={[sheetStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={[Typography.titleSm, { color: colors.text }]} numberOfLines={2}>
+            {song.title}
+          </Text>
+          {song.artist ? (
+            <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+              {song.artist}
+            </Text>
+          ) : null}
+        </View>
+        <View style={sheetStyles.headerRight}>
+          {activeKey ? (
+            <View style={[sheetStyles.keyBadgeLg, { backgroundColor: Colors.brand.primarySoft }]}>
+              <Text style={[Typography.bodyStrong, { color: Colors.brand.primary }]}>{activeKey}</Text>
+            </View>
+          ) : null}
+          <TouchableOpacity
+            onPress={onClose}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar"
+          >
+            <X size={24} color={colors.textMuted} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={sheetStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {song.chords ? (
+          <View style={sheetStyles.section}>
+            <Text style={[Typography.caption, sheetStyles.sectionLabel, { color: colors.textMuted }]}>
+              CIFRA
+            </Text>
+            <Text style={[sheetStyles.mono, { color: colors.text }]}>{song.chords}</Text>
+          </View>
+        ) : null}
+
+        {song.lyrics ? (
+          <View style={sheetStyles.section}>
+            <Text style={[Typography.caption, sheetStyles.sectionLabel, { color: colors.textMuted }]}>
+              LETRA
+            </Text>
+            <Text style={[Typography.body, { color: colors.text, lineHeight: 24 }]}>{song.lyrics}</Text>
+          </View>
+        ) : null}
+
+        {!hasContent ? (
+          <View style={sheetStyles.emptyContent}>
+            <Music size={36} color={colors.textMuted} strokeWidth={1.5} />
+            <Text style={[Typography.bodyStrong, { color: colors.textMuted, marginTop: Spacing.sm, textAlign: 'center' }]}>
+              Cifra e letra nao cadastradas
+            </Text>
+            <Text style={[Typography.caption, { color: colors.textMuted, textAlign: 'center', marginTop: Spacing.xs }]}>
+              Use o botao abaixo para abrir a cifra no Cifras Club.
+            </Text>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <View style={[sheetStyles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <TouchableOpacity
+          style={[sheetStyles.footerBtn, sheetStyles.footerBtnOutline, { borderColor: Colors.brand.primary }]}
+          onPress={() => Linking.openURL(cifrasClubUrl)}
+          accessibilityRole="link"
+          accessibilityLabel="Ver cifra no Cifras Club"
+        >
+          <ExternalLink size={16} color={Colors.brand.primary} strokeWidth={2} />
+          <Text style={[Typography.bodyStrong, { color: Colors.brand.primary }]}>Cifras Club</Text>
+        </TouchableOpacity>
+        {ytUrl ? (
+          <TouchableOpacity
+            style={[sheetStyles.footerBtn, { backgroundColor: '#FF0000' }]}
+            onPress={() => Linking.openURL(ytUrl)}
+            accessibilityRole="link"
+            accessibilityLabel="Assistir no YouTube"
+          >
+            <Play size={16} color="#FFF" strokeWidth={2} fill="#FFF" />
+            <Text style={[Typography.bodyStrong, { color: '#FFF' }]}>YouTube</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -602,7 +732,7 @@ const styles = StyleSheet.create({
   },
   songRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: Spacing.sm,
     borderWidth: 1,
     borderRadius: Radius.md,
@@ -614,4 +744,64 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: Radius.sm,
   },
+});
+
+const sheetStyles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  keyBadgeLg: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
+  },
+  scrollContent: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+    gap: Spacing.lg,
+  },
+  section: { gap: Spacing.sm },
+  sectionLabel: {
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  mono: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  emptyContent: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    padding: Spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 34 : Spacing.lg,
+    borderTopWidth: 1,
+  },
+  footerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    minHeight: Layout.minTouchTarget,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+  },
+  footerBtnOutline: { borderWidth: 1 },
 });

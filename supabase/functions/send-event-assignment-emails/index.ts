@@ -16,6 +16,12 @@ type Assignment = {
   notes: string | null;
 };
 
+type EventSong = {
+  order_index: number;
+  selected_key: string | null;
+  songs: { title: string; artist: string | null; default_key: string | null } | null;
+};
+
 type Recipient = {
   recipient_id: string;
   assignment_id: string;
@@ -34,6 +40,37 @@ function formatTimePtBr(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+function buildSongsBlock(songs: EventSong[]): string {
+  if (!songs.length) return '';
+  const rows = songs
+    .map((es) => {
+      const s = es.songs;
+      if (!s) return '';
+      const key = es.selected_key ?? s.default_key ?? '';
+      const artist = s.artist ?? '';
+      return `
+        <tr>
+          <td style="padding:6px 0;font-size:14px;color:#111;border-bottom:1px solid #f0f0f0">${s.title}</td>
+          <td style="padding:6px 8px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">${artist}</td>
+          <td style="padding:6px 0;font-size:12px;text-align:right;border-bottom:1px solid #f0f0f0">
+            ${key ? `<span style="background:#f0edff;color:#6c47ff;font-weight:600;padding:2px 8px;border-radius:4px">${key}</span>` : ''}
+          </td>
+        </tr>`;
+    })
+    .join('');
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e5e5;border-radius:8px;padding:20px;margin-bottom:24px">
+      <tr><td>
+        <p style="margin:0 0 12px;font-size:13px;font-weight:600;color:#777;text-transform:uppercase;letter-spacing:.5px">🎵 Repertório</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          ${rows}
+        </table>
+        <p style="margin:12px 0 0;font-size:11px;color:#aaa">Acesse o app para ver letra e cifra de cada música.</p>
+      </td></tr>
+    </table>`;
+}
+
 function buildEmailHtml(params: {
   inviteeName: string;
   eventTitle: string;
@@ -48,6 +85,7 @@ function buildEmailHtml(params: {
   notes: string | null;
   inviteCode: string;
   inviteeEmail: string;
+  songs: EventSong[];
 }): string {
   const base = APP_URL.replace(/\/+$/, '');
   const entryLink = `${base}/enter-event?invite_code=${params.inviteCode}`;
@@ -94,6 +132,8 @@ function buildEmailHtml(params: {
               ${params.notes ? `<p style="margin:8px 0 0;font-size:13px;color:#666;font-style:italic">${params.notes}</p>` : ''}
             </td></tr>
           </table>
+
+          ${buildSongsBlock(params.songs)}
 
           <p style="margin:0 0 8px;font-size:15px">Para visualizar e responder sua escalação, acesse o app usando:</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0edff;border-radius:8px;padding:16px;margin-bottom:24px">
@@ -213,6 +253,15 @@ Deno.serve(async (req) => {
     const orgName: string = event.organizations?.name ?? '';
     const inviteCode: string = event.invite_code ?? '';
 
+    // load event songs ordered by position
+    const { data: eventSongs } = await supabase
+      .from('event_songs')
+      .select('order_index, selected_key, songs(title, artist, default_key)')
+      .eq('event_id', event_id)
+      .order('order_index') as { data: EventSong[] | null };
+
+    const songs: EventSong[] = eventSongs ?? [];
+
     // load queued recipients for this campaign
     const { data: recipients } = await supabase
       .from('event_email_recipients')
@@ -267,6 +316,7 @@ Deno.serve(async (req) => {
         notes: assignment?.notes ?? null,
         inviteCode,
         inviteeEmail: recipient.invitee_email,
+        songs,
       });
 
       const result = await sendEmail({

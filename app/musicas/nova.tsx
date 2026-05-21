@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -11,10 +13,11 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Minus, Plus } from 'lucide-react-native';
+import { Minus, Music2, Plus, Search, X } from 'lucide-react-native';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { createSong } from '@/lib/songs';
+import { buildCifrasClubUrl, fetchLyrics, searchMusic, type MusicSearchResult } from '@/lib/cifrasclub';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
@@ -35,6 +38,58 @@ export default function NovaMusicaScreen() {
   const [notes, setNotes] = useState('');
   const [links, setLinks] = useState<string[]>(['']);
   const [loading, setLoading] = useState(false);
+
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<MusicSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [importingId, setImportingId] = useState<string | null>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleSearchChange(text: string) {
+    setSearchQuery(text);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    if (!text.trim()) { setSearchResults([]); return; }
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await searchMusic(text);
+        setSearchResults(results);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 500);
+  }
+
+  async function handleSelectResult(result: MusicSearchResult) {
+    setImportingId(result.id);
+    try {
+      const foundLyrics = await fetchLyrics(result.artist, result.title);
+      setTitle(result.title);
+      setArtist(result.artist);
+      if (foundLyrics) setLyrics(foundLyrics);
+      const cifrasUrl = buildCifrasClubUrl(result.artist, result.title);
+      const existingLinks = links.filter((l) => l.trim());
+      const alreadyHasLink = existingLinks.some((l) => l.includes('cifraclub'));
+      if (!alreadyHasLink) {
+        setLinks([cifrasUrl, ...existingLinks].slice(0, 4));
+      }
+      setSearchOpen(false);
+      setSearchQuery('');
+      setSearchResults([]);
+      if (!foundLyrics) {
+        Alert.alert(
+          'Letra não encontrada',
+          'Título e artista foram preenchidos. A letra não está disponível para esta música — você pode copiá-la manualmente do Cifras Club.',
+          [{ text: 'OK' }],
+        );
+      }
+    } finally {
+      setImportingId(null);
+    }
+  }
 
   function addLink() {
     if (links.length < 4) setLinks((prev) => [...prev, '']);
@@ -79,6 +134,19 @@ export default function NovaMusicaScreen() {
       <ScreenHeader title="Nova música" fallbackHref="/musicas" />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity
+          style={[styles.searchBtn, { backgroundColor: Colors.brand.primarySoft, borderColor: Colors.brand.primary }]}
+          onPress={() => setSearchOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar música no Cifras Club"
+        >
+          <Music2 size={18} color={Colors.brand.primary} strokeWidth={2} />
+          <Text style={[Typography.bodyStrong, { color: Colors.brand.primary, flex: 1 }]}>
+            Buscar no Cifras Club
+          </Text>
+          <Search size={16} color={Colors.brand.primary} strokeWidth={2} />
+        </TouchableOpacity>
+
         <SongForm
           title={title} setTitle={setTitle}
           artist={artist} setArtist={setArtist}
@@ -99,6 +167,75 @@ export default function NovaMusicaScreen() {
           <Button label="Salvar música" onPress={handleSave} loading={loading} />
         </View>
       </ScrollView>
+
+      <Modal visible={searchOpen} animationType="slide" onRequestClose={() => setSearchOpen(false)}>
+        <KeyboardAvoidingView
+          style={[styles.modalRoot, { backgroundColor: colors.background }]}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={[styles.modalHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+            <Text style={[Typography.titleSm, { color: colors.text, flex: 1 }]}>Buscar no Cifras Club</Text>
+            <TouchableOpacity onPress={() => setSearchOpen(false)} hitSlop={12} accessibilityLabel="Fechar busca">
+              <X size={22} color={colors.textMuted} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Search size={18} color={colors.textMuted} strokeWidth={2} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Artista ou título da música..."
+              placeholderTextColor={colors.textSoft}
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              autoFocus
+              returnKeyType="search"
+              autoCapitalize="none"
+            />
+            {searching && <ActivityIndicator size="small" color={Colors.brand.primary} />}
+          </View>
+
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.resultsList}>
+            {searchResults.length === 0 && searchQuery.trim() && !searching ? (
+              <Text style={[Typography.body, { color: colors.textMuted, textAlign: 'center', marginTop: Spacing.xl }]}>
+                Nenhum resultado encontrado.
+              </Text>
+            ) : null}
+            {searchResults.map((result) => {
+              const isImporting = importingId === result.id;
+              return (
+                <TouchableOpacity
+                  key={result.id}
+                  style={[styles.resultRow, { backgroundColor: colors.surface, borderColor: colors.border, opacity: importingId && !isImporting ? 0.4 : 1 }]}
+                  onPress={() => handleSelectResult(result)}
+                  disabled={Boolean(importingId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Selecionar ${result.title} de ${result.artist}`}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[Typography.bodyStrong, { color: colors.text }]} numberOfLines={1}>
+                      {result.title}
+                    </Text>
+                    <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+                      {result.artist}
+                      {result.album ? ` · ${result.album}` : ''}
+                    </Text>
+                  </View>
+                  {isImporting
+                    ? <ActivityIndicator size="small" color={Colors.brand.primary} />
+                    : <Text style={[Typography.caption, { color: Colors.brand.primary }]}>Usar</Text>
+                  }
+                </TouchableOpacity>
+              );
+            })}
+            {searchResults.length > 0 ? (
+              <Text style={[Typography.micro, { color: colors.textMuted, textAlign: 'center', marginTop: Spacing.md }]}>
+                Título, artista e letra (quando disponível) serão importados automaticamente.
+              </Text>
+            ) : null}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -344,5 +481,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.xs,
     marginTop: Spacing.xs,
+  },
+  searchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  modalRoot: { flex: 1 },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    margin: Spacing.lg,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    minHeight: Layout.minTouchTarget,
+  },
+  searchInput: {
+    flex: 1,
+    ...Typography.body,
+    paddingVertical: Spacing.sm,
+  },
+  resultsList: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+    gap: Spacing.xs,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
   },
 });

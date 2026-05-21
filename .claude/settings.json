@@ -60,7 +60,21 @@
       "PowerShell($sdkPath = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\"; if \\(Test-Path \"$sdkPath\\\\platform-tools\\\\adb.exe\"\\) { & \"$sdkPath\\\\platform-tools\\\\adb.exe\" devices } else { \"ADB not found at $sdkPath\" })",
       "PowerShell($sdkPath = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\"; & \"$sdkPath\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)",
       "PowerShell($sdkPath = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\"; Get-ChildItem \"$sdkPath\\\\emulator\" -ErrorAction SilentlyContinue | Select-Object -First 5; Get-ChildItem \"$env:USERPROFILE\\\\.android\\\\avd\" -ErrorAction SilentlyContinue | Select-Object Name)",
-      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.android\\\\avd\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:USERPROFILE\\\\.android\" -ErrorAction SilentlyContinue | Select-Object Name)"
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.android\\\\avd\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:USERPROFILE\\\\.android\" -ErrorAction SilentlyContinue | Select-Object Name)",
+      "Bash(node -e \"const l = require\\('lucide-react-native'\\); console.log\\(Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('you'\\) || k.toLowerCase\\(\\).includes\\('play'\\)\\)\\)\")",
+      "Bash(curl -s \"https://api.cifraclub.com.br/v3/search/music/?q=fernandinho&limit=5\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://api.cifraclub.com.br/v3/search/?q=fernandinho&limit=5\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://api.cifraclub.com.br/v3/search/music?q=fernandinho\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(curl -s \"https://api.vagalume.com.br/search.php?q=fernandinho&limit=5\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://api.vagalume.com.br/search.php?q=fernandinho&art=fernandinho&type=exact&limit=5&apikey=guest\")",
+      "Bash(curl -s \"https://itunes.apple.com/search?term=fernandinho&media=music&limit=5&country=BR\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['trackName'], '-', r['artistName']\\) for r in d.get\\('results',[]\\)]\")",
+      "Bash(curl -s \"https://api.deezer.com/search?q=fernandinho&limit=5\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['title'], '-', r['artist']['name']\\) for r in d.get\\('data',[]\\)]\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); d.results.forEach\\(r => console.log\\(r.trackName, '-', r.artistName\\)\\)\")",
+      "PowerShell($r = Invoke-RestMethod \"https://itunes.apple.com/search?term=fernandinho&media=music&limit=5&country=BR\"; $r.results | Select-Object trackName, artistName)",
+      "PowerShell($r = Invoke-RestMethod \"https://itunes.apple.com/search?term=fernandinho&media=music&limit=5&country=BR\"; $r.resultCount; $r.results | ForEach-Object { \"$\\($_.trackName\\) - $\\($_.artistName\\)\" })",
+      "PowerShell($r = Invoke-RestMethod \"https://api.lyrics.ovh/v1/Fernandinho/Galileu\"; $r.lyrics | Select-Object -First 1)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"
