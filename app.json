@@ -16,7 +16,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tonaescala.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "O Afinador usa o microfone para detectar a nota tocada no instrumento."
+        "NSMicrophoneUsageDescription": "O Afinador usa o microfone para detectar a nota tocada no instrumento.",
+        "NSFaceIDUsageDescription": "O ToNaEscala usa Face ID para autenticar seu login com segurança."
       }
     },
     "android": {
@@ -30,7 +31,9 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ],
       "allowBackup": false
     },
@@ -46,6 +49,7 @@
         }
       ],
       "expo-secure-store",
+      "expo-local-authentication",
       "expo-camera",
       "@react-native-community/datetimepicker",
       "expo-font",

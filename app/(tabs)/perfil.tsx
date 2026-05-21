@@ -1,10 +1,12 @@
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import {
   Building2,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
   CreditCard,
+  Fingerprint,
   LogOut,
   Mail,
   Music,
@@ -12,6 +14,7 @@ import {
   Sparkles,
   UserRound,
   Guitar,
+  BookUser,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSession } from '@/hooks/useSession';
@@ -21,6 +24,12 @@ import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { supabase } from '@/lib/supabase';
+import {
+  disableBiometric,
+  getBiometricLabel,
+  isBiometricAvailable,
+  isBiometricEnabled,
+} from '@/lib/biometric';
 
 const CURRENT_PLAN = {
   name: 'Free',
@@ -53,13 +62,63 @@ export default function PerfilScreen() {
   const { org } = useOrganization();
   const { colors } = useColorScheme();
 
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Digital');
+
   const user = session?.user;
   const email = user?.email ?? 'Conta nao identificada';
+  const isEmailUser = user?.app_metadata?.provider === 'email';
   const displayName =
     (typeof user?.user_metadata?.name === 'string' && user.user_metadata.name.trim()) ||
     (typeof user?.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()) ||
     email.split('@')[0] ||
     'Administrador';
+
+  useEffect(() => {
+    async function loadBiometric() {
+      const available = await isBiometricAvailable();
+      setBiometricAvailable(available);
+      if (available) {
+        setBiometricLabel(await getBiometricLabel());
+        setBiometricEnabled(await isBiometricEnabled());
+      }
+    }
+    loadBiometric();
+  }, []);
+
+  async function handleToggleBiometric(value: boolean) {
+    if (!value) {
+      Alert.alert(
+        `Desativar login por ${biometricLabel}?`,
+        'Voce precisara usar e-mail e senha na proxima vez.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Desativar',
+            style: 'destructive',
+            onPress: async () => {
+              await disableBiometric();
+              setBiometricEnabled(false);
+            },
+          },
+        ],
+      );
+    } else {
+      if (!isEmailUser) {
+        Alert.alert(
+          'Nao disponivel',
+          'O login por biometria esta disponivel apenas para contas com e-mail e senha.',
+        );
+        return;
+      }
+      Alert.alert(
+        `Ativar login por ${biometricLabel}`,
+        `Para ativar, saia da conta e entre novamente com e-mail e senha. A opcao de ativar ${biometricLabel} sera oferecida automaticamente.`,
+        [{ text: 'Entendido' }],
+      );
+    }
+  }
 
   async function handleSignOut() {
     Alert.alert('Sair da conta', 'Voce precisara entrar novamente para administrar seus eventos.', [
@@ -145,6 +204,12 @@ export default function PerfilScreen() {
         <SectionTitle label="Configuracoes" />
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <NavRow
+            icon={BookUser}
+            label="Agenda de Contatos"
+            subtitle="Pessoas para escalar rapidamente"
+            onPress={() => router.push('/contatos' as any)}
+          />
+          <NavRow
             icon={Music}
             label="Biblioteca de Musicas"
             subtitle="Gerenciar catalogo da organizacao"
@@ -158,6 +223,37 @@ export default function PerfilScreen() {
             last
           />
         </View>
+
+        {biometricAvailable && (
+          <>
+            <SectionTitle label="Seguranca" />
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.toggleRow}>
+                <View style={[styles.navIcon, { backgroundColor: Colors.brand.primarySoft }]}>
+                  <Fingerprint size={20} color={Colors.brand.primary} strokeWidth={2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.bodyStrong, { color: colors.text }]}>
+                    Login por {biometricLabel}
+                  </Text>
+                  <Text style={[Typography.caption, { color: colors.textMuted }]}>
+                    {biometricEnabled
+                      ? 'Ativo — entre sem digitar senha'
+                      : isEmailUser
+                        ? 'Ative no proximo login com e-mail'
+                        : 'Disponivel apenas para conta e-mail'}
+                  </Text>
+                </View>
+                <Switch
+                  value={biometricEnabled}
+                  onValueChange={handleToggleBiometric}
+                  trackColor={{ true: Colors.brand.primary, false: undefined }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+            </View>
+          </>
+        )}
 
         <SectionTitle label="Sessao" />
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -325,6 +421,14 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
   },
   navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    minHeight: 64,
+  },
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,

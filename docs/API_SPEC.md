@@ -409,3 +409,61 @@ Referências consultadas:
 - https://supabase.com/docs/guides/api/securing-your-api
 - https://supabase.com/changelog?tags=breaking-change
 
+## 11. Contratos SaaS planejados
+
+### Organization Members
+
+Tabela: `organization_members`
+
+Uso:
+
+- listar usuarios vinculados a uma organizacao;
+- permitir multiplos administradores no plano Business;
+- substituir a regra antiga baseada somente em `organizations.owner_id`.
+
+Campos principais:
+
+```json
+{
+  "organization_id": "uuid",
+  "user_id": "uuid",
+  "role": "owner | admin | editor | viewer",
+  "status": "active | invited | removed"
+}
+```
+
+Regras:
+
+- todo `owner_id` atual deve existir como membro `owner`;
+- usuarios atuais continuam usando a organizacao como hoje;
+- convites e edicao de membros devem ser feitos por RPC futura, nao por insert direto do app.
+
+### Plans
+
+Tabela: `plans`
+
+Planos internos iniciais:
+
+- `individual_free`: ativo, invisivel no app, limite planejado de 10 eventos/subeventos por mes;
+- `individual_pro`: inativo ate definicao de cobranca;
+- `organization_business`: inativo ate definicao de cobranca.
+
+### Organization Subscriptions
+
+Tabela: `organization_subscriptions`
+
+Uso:
+
+- manter o plano atual de cada organizacao;
+- conectar a cobranca futura via `external_provider`, `external_customer_id` e `external_subscription_id`;
+- permitir que organizacoes atuais recebam `individual_free` sem mudanca visual.
+
+### Limite de eventos
+
+O backend deve centralizar a validacao em funcao/RPC antes de ativar o limite visualmente.
+
+Regra planejada:
+
+- contar eventos e subeventos criados no mes por `organization_id`;
+- `individual_free`: ate 10 por mes;
+- `individual_pro` e `organization_business`: ilimitado.

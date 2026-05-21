@@ -305,3 +305,44 @@ Para fase futura:
 - https://supabase.com/docs/guides/api/securing-your-api
 - https://supabase.com/changelog?tags=breaking-change
 
+## 12. Evolucao SaaS - membership por organizacao
+
+A partir da fundacao SaaS, `organizations.owner_id` deixa de ser a unica fonte de permissao operacional. Ele permanece como dono primario/legal, mas a autorizacao deve usar `organization_members`.
+
+Tabela base:
+
+```sql
+public.organization_members (
+  organization_id uuid,
+  user_id uuid,
+  role text,
+  status text
+)
+```
+
+Papeis planejados:
+
+- `owner`: administra organizacao, billing futuro e membros.
+- `admin`: administra eventos, equipes, escalas e membros operacionais.
+- `editor`: administra conteudo operacional, sem billing.
+- `viewer`: acesso futuro somente leitura.
+
+Helpers:
+
+```sql
+app_private.is_org_member(org_id uuid)
+app_private.has_org_role(org_id uuid, allowed_roles text[])
+app_private.can_admin_org(org_id uuid)
+```
+
+Compatibilidade:
+
+- `app_private.is_org_owner(org_id)` continua existindo para nao quebrar policies/RPCs antigas.
+- A implementacao passa a considerar membros ativos com papel administrativo.
+- Novas policies devem preferir `has_org_role` com papeis explicitos.
+
+Novas tabelas expostas devem seguir a mesma regra:
+
+- leitura: membro ativo da organizacao;
+- escrita operacional: `owner`, `admin` ou `editor`, conforme o recurso;
+- billing/membros sensiveis: `owner` ou RPC server-side.

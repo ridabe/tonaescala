@@ -18,6 +18,7 @@ import {
   BarChart3,
   CalendarPlus,
   CheckCircle2,
+  Fingerprint,
   Mail,
   QrCode,
   ShieldCheck,
@@ -25,6 +26,14 @@ import {
 import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { createSessionFromUrl, signInWithGoogle } from '@/lib/authOAuth';
+import {
+  authenticate,
+  enableBiometric,
+  getBiometricLabel,
+  getStoredCredentials,
+  isBiometricAvailable,
+  isBiometricEnabled,
+} from '@/lib/biometric';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
@@ -80,6 +89,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [biometricReady, setBiometricReady] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Digital');
 
   const heroAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -121,12 +132,61 @@ export default function LoginScreen() {
     });
   }, [url]);
 
+  useEffect(() => {
+    async function checkBiometric() {
+      const available = await isBiometricAvailable();
+      const enabled = await isBiometricEnabled();
+      if (available && enabled) {
+        setBiometricLabel(await getBiometricLabel());
+        setBiometricReady(true);
+      }
+    }
+    checkBiometric();
+  }, []);
+
   async function handleEmailLogin() {
     if (!email || !password) { Alert.alert('Preencha e-mail e senha.'); return; }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) Alert.alert('Erro ao entrar', error.message);
+    if (error) { Alert.alert('Erro ao entrar', error.message); return; }
+    offerBiometricEnrollment(email, password);
+  }
+
+  async function offerBiometricEnrollment(savedEmail: string, savedPassword: string) {
+    const available = await isBiometricAvailable();
+    const alreadyEnabled = await isBiometricEnabled();
+    if (!available || alreadyEnabled) return;
+    const label = await getBiometricLabel();
+    Alert.alert(
+      `Ativar login por ${label}?`,
+      `Da próxima vez você pode entrar usando ${label} sem precisar digitar a senha.`,
+      [
+        { text: 'Agora não', style: 'cancel' },
+        {
+          text: 'Ativar',
+          onPress: () => enableBiometric(savedEmail, savedPassword),
+        },
+      ],
+    );
+  }
+
+  async function handleBiometricLogin() {
+    setLoading(true);
+    try {
+      const ok = await authenticate(`Entrar como organizador`);
+      if (!ok) return;
+      const creds = await getStoredCredentials();
+      if (!creds) {
+        Alert.alert('Credenciais não encontradas', 'Entre com e-mail e senha novamente.');
+        setBiometricReady(false);
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword(creds);
+      if (error) Alert.alert('Erro ao entrar', error.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleEmailSignUp() {
@@ -259,15 +319,34 @@ export default function LoginScreen() {
 
           {mode === 'options' ? (
             <View style={s.actionStack}>
+              {biometricReady && (
+                <TouchableOpacity
+                  style={[s.btn, s.btnPrimary, { backgroundColor: primary }]}
+                  onPress={handleBiometricLogin}
+                  disabled={loading}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Entrar com ${biometricLabel}`}
+                  accessibilityState={{ disabled: loading, busy: loading }}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Fingerprint size={17} color="#FFF" strokeWidth={2.2} />
+                      <Text style={[s.btnText, { color: '#FFF' }]}>Entrar com {biometricLabel}</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
-                style={[s.btn, s.btnPrimary, { backgroundColor: primary }]}
+                style={[s.btn, biometricReady ? s.btnOutline : s.btnPrimary, biometricReady ? { borderColor: primary } : { backgroundColor: primary }]}
                 onPress={handleGoogleLogin}
                 disabled={loading}
                 accessibilityRole="button"
                 accessibilityLabel="Entrar com Google"
                 accessibilityState={{ disabled: loading }}
               >
-                <Text style={[s.btnText, { color: '#FFF' }]}>Entrar com Google</Text>
+                <Text style={[s.btnText, { color: biometricReady ? primary : '#FFF' }]}>Entrar com Google</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.btn, s.btnOutline, { borderColor: primary }]}
