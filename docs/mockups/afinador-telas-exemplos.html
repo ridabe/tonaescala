@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ToNaEscala - Exemplos de telas do Afinador</title>
+  <style>
+    :root {
+      --brand: #0f766e;
+      --brand-pressed: #115e59;
+      --brand-soft: #ccfbf1;
+      --accent: #f59e0b;
+      --accent-soft: #fef3c7;
+      --success: #16a34a;
+      --success-soft: #dcfce7;
+      --warning: #f59e0b;
+      --warning-soft: #fef3c7;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --info: #0284c7;
+      --info-soft: #e0f2fe;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-alt: #f1f5f9;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #0f172a;
+      --muted: #64748b;
+      --soft: #94a3b8;
+      --radius: 8px;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .page {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px 18px 36px;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      margin-bottom: 22px;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 32px;
+      letter-spacing: 0;
+    }
+
+    .page-subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 21px;
+      max-width: 620px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      height: 30px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      padding: 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(300px, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .phone-wrap {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mockup-label {
+      font-size: 13px;
+      line-height: 18px;
+      color: var(--muted);
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 380px;
+      min-height: 760px;
+      margin: 0 auto;
+      border: 1px solid var(--border-strong);
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 78px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.18);
+      z-index: 5;
+    }
+
+    .screen {
+      min-height: 760px;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 44px 16px 16px;
+      background: var(--brand);
+      border-bottom: 1px solid var(--brand-pressed);
+      color: #fff;
+    }
+
+    .back {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .header-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: 22px;
+      line-height: 30px;
+      font-weight: 700;
+    }
+
+    .header-meta {
+      margin: 1px 0 0;
+      color: var(--brand-soft);
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .content {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .panel.compact {
+      padding: 12px;
+    }
+
+    .top-row,
+    .split-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric {
+      display: grid;
+      gap: 2px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      color: var(--text);
+      font-size: 15px;
+      line-height: 22px;
+      font-weight: 700;
+    }
+
+    .status-pill {
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 0 12px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-ok {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .status-warn {
+      background: var(--warning-soft);
+      color: #a16207;
+    }
+
+    .status-info {
+      background: var(--info-soft);
+      color: var(--info);
+    }
+
+    .tuner-card {
+      min-height: 322px;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .note {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .note-main {
+      font-size: 76px;
+      line-height: 86px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .note-sharp {
+      font-size: 34px;
+      line-height: 40px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .hz-line {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 700;
+      margin-top: -10px;
+    }
+
+    .gauge {
+      width: min(270px, 100%);
+      height: 142px;
+      position: relative;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+
+    .arc {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: -112px;
+      height: 224px;
+      border-radius: 999px 999px 0 0;
+      border: 17px solid var(--border);
+      border-bottom: 0;
+    }
+
+    .arc::before,
+    .arc::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      width: 46%;
+      height: 112px;
+      border-top: 17px solid var(--warning);
+      opacity: 0.34;
+    }
+
+    .arc::before {
+      left: -17px;
+      border-left: 17px solid var(--warning);
+      border-radius: 999px 0 0 0;
+    }
+
+    .arc::after {
+      right: -17px;
+      border-right: 17px solid var(--warning);
+      border-radius: 0 999px 0 0;
+    }
+
+    .sweet-spot {
+      position: absolute;
+      left: 50%;
+      bottom: 91px;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 17px;
+      border-radius: 999px;
+      background: var(--success);
+      z-index: 1;
+    }
+
+    .needle {
+      --angle: 0deg;
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      width: 4px;
+      height: 112px;
+      background: var(--brand);
+      border-radius: 999px;
+      transform-origin: 50% 100%;
+      transform: translateX(-50%) rotate(var(--angle));
+      box-shadow: 0 0 0 5px rgba(15, 118, 110, 0.12);
+      transition: transform 260ms ease, background 260ms ease;
+      z-index: 2;
+    }
+
+    .needle::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -13px;
+      transform: translateX(-50%);
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--brand);
+      border: 5px solid var(--brand-soft);
+    }
+
+    .ticks {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .tick {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      width: 2px;
+      height: 12px;
+      background: var(--soft);
+      transform-origin: 50% 112px;
+    }
+
+    .tick.major {
+      height: 18px;
+      width: 3px;
+      background: var(--muted);
+    }
+
+    .cent-row {
+      width: min(260px, 100%);
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 800;
+      margin-top: -2px;
+    }
+
+    .readout {
+      min-width: 108px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 22px;
+      font-weight: 800;
+    }
+
+    .string-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .string {
+      min-height: 58px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      gap: 0;
+      padding: 7px 4px;
+      color: var(--text);
+    }
+
+    .string.active {
+      border-color: var(--brand);
+      background: var(--brand-soft);
+      color: var(--brand-pressed);
+    }
+
+    .string-note {
+      font-size: 21px;
+      line-height: 25px;
+      font-weight: 800;
+    }
+
+    .string-name {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 700;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .button {
+      min-height: 48px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      font-size: 15px;
+      line-height: 22px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      color: #fff;
+      background: var(--brand);
+    }
+
+    .button.outline {
+      color: var(--brand);
+      border-color: var(--brand);
+      background: transparent;
+    }
+
+    .button.ghost {
+      color: var(--muted);
+      background: var(--surface-alt);
+      border-color: var(--border);
+    }
+
+    .button-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      background: var(--surface-alt);
+    }
+
+    .tab {
+      min-height: 34px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--brand);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+
+    .bars {
+      display: flex;
+      align-items: end;
+      gap: 5px;
+      height: 44px;
+    }
+
+    .bar {
+      width: 7px;
+      min-height: 8px;
+      border-radius: 999px 999px 2px 2px;
+      background: var(--brand);
+      opacity: 0.36;
+      animation: level 1.2s ease-in-out infinite;
+    }
+
+    .bar:nth-child(2) { animation-delay: 80ms; }
+    .bar:nth-child(3) { animation-delay: 160ms; }
+    .bar:nth-child(4) { animation-delay: 240ms; }
+    .bar:nth-child(5) { animation-delay: 320ms; }
+    .bar:nth-child(6) { animation-delay: 400ms; }
+    .bar:nth-child(7) { animation-delay: 480ms; }
+    .bar:nth-child(8) { animation-delay: 560ms; }
+    .bar:nth-child(9) { animation-delay: 640ms; }
+
+    @keyframes level {
+      0%, 100% { height: 12px; opacity: 0.28; }
+      50% { height: 38px; opacity: 0.85; }
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini-row {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 46px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--surface);
+    }
+
+    .mini-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+    }
+
+    .mini-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 19px;
+      font-weight: 800;
+    }
+
+    .mini-sub {
+      margin: 1px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 600;
+    }
+
+    .mini-status {
+      color: var(--success);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .bottom-nav {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      height: 66px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .nav-item {
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 3px;
+      color: var(--soft);
+      font-size: 10px;
+      line-height: 12px;
+      font-weight: 800;
+    }
+
+    .nav-item.active {
+      color: var(--brand);
+    }
+
+    .nav-ico {
+      font-size: 20px;
+      line-height: 20px;
+    }
+
+    .permission {
+      min-height: 170px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      gap: 10px;
+      align-content: center;
+    }
+
+    .mic-icon {
+      width: 62px;
+      height: 62px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .permission-title {
+      margin: 0;
+      font-size: 18px;
+      line-height: 26px;
+      font-weight: 800;
+    }
+
+    .permission-text {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 19px;
+      max-width: 260px;
+    }
+
+    .small-settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .setting {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--surface);
+      min-height: 62px;
+    }
+
+    .calibration {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--brand);
+      font-weight: 900;
+    }
+
+    .step {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid var(--brand);
+      display: grid;
+      place-items: center;
+      line-height: 1;
+    }
+
+    .demo-a .needle {
+      animation: sweep-a 3.8s ease-in-out infinite;
+    }
+
+    .demo-b .needle {
+      animation: sweep-b 2.8s ease-in-out infinite;
+    }
+
+    .demo-c .needle {
+      animation: sweep-c 4.5s ease-in-out infinite;
+    }
+
+    @keyframes sweep-a {
+      0% { --angle: -31deg; background: var(--warning); }
+      28% { --angle: -12deg; background: var(--warning); }
+      48% { --angle: 2deg; background: var(--success); }
+      72% { --angle: 16deg; background: var(--warning); }
+      100% { --angle: -31deg; background: var(--warning); }
+    }
+
+    @keyframes sweep-b {
+      0% { --angle: -6deg; background: var(--success); }
+      45% { --angle: 4deg; background: var(--success); }
+      70% { --angle: 0deg; background: var(--success); }
+      100% { --angle: -6deg; background: var(--success); }
+    }
+
+    @keyframes sweep-c {
+      0% { --angle: 30deg; background: var(--warning); }
+      30% { --angle: 19deg; background: var(--warning); }
+      55% { --angle: 6deg; background: var(--success); }
+      80% { --angle: -18deg; background: var(--warning); }
+      100% { --angle: 30deg; background: var(--warning); }
+    }
+
+    @media (max-width: 1060px) {
+      .mockup-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .legend {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Exemplos de telas - Afinador ToNaEscala</h1>
+        <p class="page-subtitle">Tres caminhos visuais para uma ferramenta real dentro do app, usando a paleta, cards, botoes e densidade mobile ja existentes.</p>
+      </div>
+      <div class="legend">
+        <span class="chip">Demo animada</span>
+        <span class="chip">Mobile first</span>
+        <span class="chip">Sem implementacao nativa</span>
+      </div>
+    </header>
+
+    <section class="mockup-grid" aria-label="Exemplos de telas do afinador">
+      <article class="phone-wrap">
+        <p class="mockup-label">Opcao A - afinador cromatico direto</p>
+        <div class="phone">
+          <div class="screen demo-a">
+            <header class="app-header">
+              <div class="back">‹</div>
+              <div class="header-copy">
+                <h2 class="header-title">Afinador</h2>
+                <p class="header-meta">Cromatico • Microfone ativo</p>
+              </div>
+              <span class="status-pill status-ok">OUVINDO</span>
+            </header>
+
+            <div class="content">
+              <section class="panel compact">
+                <div class="top-row">
+                  <div class="metric">
+                    <span class="metric-label">Calibragem</span>
+                    <span class="metric-value">A4 440 Hz</span>
+                  </div>
+                  <div class="metric" style="text-align:right">
+                    <span class="metric-label">Sensibilidade</span>
+                    <span class="metric-value">Normal</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel tuner-card">
+                <div class="note" aria-label="Nota detectada">
+                  <span class="note-main">G</span>
+                  <span class="note-sharp">#</span>
+                </div>
+                <div class="hz-line">415.8 Hz</div>
+                <div class="gauge">
+                  <div class="arc"></div>
+                  <div class="sweet-spot"></div>
+                  <div class="ticks">
+                    <span class="tick major" style="transform: translateX(-50%) rotate(-50deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(-35deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(-20deg)"></span>
+                    <span class="tick major" style="transform: translateX(-50%) rotate(0deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(20deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(35deg)"></span>
+                    <span class="tick major" style="transform: translateX(-50%) rotate(50deg)"></span>
+                  </div>
+                  <div class="needle"></div>
+                </div>
+                <div class="cent-row">
+                  <span>-50</span>
+                  <span>0 cents</span>
+                  <span>+50</span>
+                </div>
+                <div class="readout">-12 cents</div>
+              </section>
+
+              <section class="panel compact">
+                <div class="split-row">
+                  <div class="metric">
+                    <span class="metric-label">Entrada</span>
+                    <span class="metric-value">Som detectado</span>
+                  </div>
+                  <div class="bars" aria-hidden="true">
+                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                  </div>
+                </div>
+              </section>
+
+              <div class="control-row">
+                <button class="button outline"><span class="button-icon">↻</span>Reiniciar</button>
+                <button class="button primary"><span class="button-icon">■</span>Pausar</button>
+              </div>
+            </div>
+
+            <nav class="bottom-nav" aria-label="Navegacao">
+              <span class="nav-item"><span class="nav-ico">⌂</span>Agenda</span>
+              <span class="nav-item"><span class="nav-ico">◫</span>Eventos</span>
+              <span class="nav-item active"><span class="nav-ico">♪</span>Musica</span>
+              <span class="nav-item"><span class="nav-ico">◔</span>Notif.</span>
+              <span class="nav-item"><span class="nav-ico">◯</span>Perfil</span>
+            </nav>
+          </div>
+        </div>
+      </article>
+
+      <article class="phone-wrap">
+        <p class="mockup-label">Opcao B - modo instrumento com cordas</p>
+        <div class="phone">
+          <div class="screen demo-b">
+            <header class="app-header">
+              <div class="back">‹</div>
+              <div class="header-copy">
+                <h2 class="header-title">Afinador</h2>
+                <p class="header-meta">Violao • Ensaio Domingo 19h</p>
+              </div>
+              <span class="status-pill status-ok">AFINADO</span>
+            </header>
+
+            <div class="content">
+              <div class="mode-tabs">
+                <span class="tab">Cromatico</span>
+                <span class="tab active">Violao</span>
+                <span class="tab">Baixo</span>
+              </div>
+
+              <section class="panel tuner-card">
+                <div class="note" aria-label="Corda selecionada">
+                  <span class="note-main">D</span>
+                </div>
+                <div class="hz-line">4ª corda • 146.8 Hz</div>
+                <div class="gauge">
+                  <div class="arc"></div>
+                  <div class="sweet-spot"></div>
+                  <div class="ticks">
+                    <span class="tick major" style="transform: translateX(-50%) rotate(-50deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(-35deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(-20deg)"></span>
+                    <span class="tick major" style="transform: translateX(-50%) rotate(0deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(20deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(35deg)"></span>
+                    <span class="tick major" style="transform: translateX(-50%) rotate(50deg)"></span>
+                  </div>
+                  <div class="needle"></div>
+                </div>
+                <div class="cent-row">
+                  <span>grave</span>
+                  <span>no centro</span>
+                  <span>agudo</span>
+                </div>
+                <div class="readout" style="background: var(--success-soft); color: var(--success);">+2 cents</div>
+              </section>
+
+              <section class="panel compact">
+                <div class="string-grid">
+                  <div class="string"><span class="string-note">E</span><span class="string-name">6ª</span></div>
+                  <div class="string"><span class="string-note">A</span><span class="string-name">5ª</span></div>
+                  <div class="string active"><span class="string-note">D</span><span class="string-name">4ª</span></div>
+                  <div class="string"><span class="string-note">G</span><span class="string-name">3ª</span></div>
+                  <div class="string"><span class="string-note">B</span><span class="string-name">2ª</span></div>
+                  <div class="string"><span class="string-note">E</span><span class="string-name">1ª</span></div>
+                </div>
+              </section>
+
+              <section class="panel compact">
+                <div class="top-row">
+                  <div class="metric">
+                    <span class="metric-label">Progresso</span>
+                    <span class="metric-value">3 de 6 cordas</span>
+                  </div>
+                  <span class="status-pill status-info">PADRAO EADGBE</span>
+                </div>
+              </section>
+            </div>
+
+            <nav class="bottom-nav" aria-label="Navegacao">
+              <span class="nav-item"><span class="nav-ico">⌂</span>Agenda</span>
+              <span class="nav-item"><span class="nav-ico">◫</span>Eventos</span>
+              <span class="nav-item active"><span class="nav-ico">♪</span>Musica</span>
+              <span class="nav-item"><span class="nav-ico">◔</span>Notif.</span>
+              <span class="nav-item"><span class="nav-ico">◯</span>Perfil</span>
+            </nav>
+          </div>
+        </div>
+      </article>
+
+      <article class="phone-wrap">
+        <p class="mockup-label">Opcao C - central musical com permissao e ajustes</p>
+        <div class="phone">
+          <div class="screen demo-c">
+            <header class="app-header">
+              <div class="back">‹</div>
+              <div class="header-copy">
+                <h2 class="header-title">Ferramentas</h2>
+                <p class="header-meta">Repertorio • Afinador • Apoio</p>
+              </div>
+              <span class="status-pill status-warn">+18</span>
+            </header>
+
+            <div class="content">
+              <section class="panel permission">
+                <div class="mic-icon">♪</div>
+                <h3 class="permission-title">Afinador pronto</h3>
+                <p class="permission-text">Ao iniciar, o app usa o microfone apenas para calcular a nota tocada no aparelho.</p>
+                <button class="button primary" style="width:100%"><span class="button-icon">●</span>Iniciar afinacao</button>
+              </section>
+
+              <section class="panel tuner-card" style="min-height:260px">
+                <div class="top-row" style="width:100%">
+                  <div class="metric">
+                    <span class="metric-label">Preview</span>
+                    <span class="metric-value">Modo cromatico</span>
+                  </div>
+                  <span class="status-pill status-warn">AGUDO</span>
+                </div>
+                <div class="note" aria-label="Nota detectada">
+                  <span class="note-main" style="font-size:58px; line-height:68px">A</span>
+                </div>
+                <div class="gauge" style="height:118px">
+                  <div class="arc"></div>
+                  <div class="sweet-spot"></div>
+                  <div class="ticks">
+                    <span class="tick major" style="transform: translateX(-50%) rotate(-50deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(-25deg)"></span>
+                    <span class="tick major" style="transform: translateX(-50%) rotate(0deg)"></span>
+                    <span class="tick" style="transform: translateX(-50%) rotate(25deg)"></span>
+                    <span class="tick major" style="transform: translateX(-50%) rotate(50deg)"></span>
+                  </div>
+                  <div class="needle"></div>
+                </div>
+              </section>
+
+              <section class="panel compact">
+                <div class="small-settings">
+                  <div class="setting">
+                    <span class="metric-label">Calibragem</span>
+                    <div class="calibration">
+                      <span class="metric-value">440 Hz</span>
+                      <span class="stepper"><span class="step">−</span><span class="step">+</span></span>
+                    </div>
+                  </div>
+                  <div class="setting">
+                    <span class="metric-label">Modo</span>
+                    <div class="calibration">
+                      <span class="metric-value">Auto</span>
+                      <span class="status-pill status-info">ON</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="mini-list">
+                <div class="mini-row">
+                  <div class="mini-icon">♪</div>
+                  <div>
+                    <p class="mini-title">Afinador cromatico</p>
+                    <p class="mini-sub">Livre para voz, cordas e sopros</p>
+                  </div>
+                  <span class="mini-status">Abrir</span>
+                </div>
+                <div class="mini-row">
+                  <div class="mini-icon">G</div>
+                  <div>
+                    <p class="mini-title">Violao e guitarra</p>
+                    <p class="mini-sub">E A D G B E</p>
+                  </div>
+                  <span class="mini-status">Abrir</span>
+                </div>
+              </section>
+            </div>
+
+            <nav class="bottom-nav" aria-label="Navegacao">
+              <span class="nav-item"><span class="nav-ico">⌂</span>Agenda</span>
+              <span class="nav-item"><span class="nav-ico">◫</span>Eventos</span>
+              <span class="nav-item active"><span class="nav-ico">♪</span>Musica</span>
+              <span class="nav-item"><span class="nav-ico">◔</span>Notif.</span>
+              <span class="nav-item"><span class="nav-ico">◯</span>Perfil</span>
+            </nav>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

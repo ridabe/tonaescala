@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
+  Guitar,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSession } from '@/hooks/useSession';
@@ -149,6 +150,13 @@ export default function PerfilScreen() {
             subtitle="Gerenciar catalogo da organizacao"
             onPress={() => router.push('/musicas')}
           />
+          <NavRow
+            icon={Guitar}
+            label="Afinador"
+            subtitle="Afinador cromatico para musicos"
+            onPress={() => router.push('/afinador')}
+            last
+          />
         </View>
 
         <SectionTitle label="Sessao" />
@@ -182,16 +190,18 @@ function NavRow({
   label,
   subtitle,
   onPress,
+  last,
 }: {
   icon: typeof Music;
   label: string;
   subtitle: string;
   onPress: () => void;
+  last?: boolean;
 }) {
   const { colors } = useColorScheme();
   return (
     <TouchableOpacity
-      style={styles.navRow}
+      style={[styles.navRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}

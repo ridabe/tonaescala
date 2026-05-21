@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.tonaescala.app"
+      "bundleIdentifier": "com.tonaescala.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "O Afinador usa o microfone para detectar a nota tocada no instrumento."
+      }
     },
     "android": {
       "package": "com.tonaescala.app",
@@ -25,7 +28,9 @@
         "backgroundColor": "#0F766E"
       },
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "allowBackup": false
     },

@@ -54,7 +54,12 @@
       "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\events\\\\[id].tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id].tsx\")",
       "Bash(mkdir \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id]\")",
       "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\events\\\\[id]\\\\add-schedule.tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id]\\\\add-schedule.tsx\")",
-      "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\events\\\\[id]\\\\edit.tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id]\\\\edit.tsx\")"
+      "Bash(cp \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\events\\\\[id]\\\\edit.tsx\" \"c:\\\\Projetos\\\\ToNaEscala\\\\app\\\\\\(tabs\\)\\\\eventos\\\\[id]\\\\edit.tsx\")",
+      "Bash(node -e \"const l = require\\('lucide-react-native'\\); console.log\\(Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('guitar'\\)\\)\\)\")",
+      "PowerShell(& adb devices 2>&1)",
+      "PowerShell($sdkPath = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\"; if \\(Test-Path \"$sdkPath\\\\platform-tools\\\\adb.exe\"\\) { & \"$sdkPath\\\\platform-tools\\\\adb.exe\" devices } else { \"ADB not found at $sdkPath\" })",
+      "PowerShell($sdkPath = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\"; & \"$sdkPath\\\\emulator\\\\emulator.exe\" -list-avds 2>&1)",
+      "PowerShell($sdkPath = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\"; Get-ChildItem \"$sdkPath\\\\emulator\" -ErrorAction SilentlyContinue | Select-Object -First 5; Get-ChildItem \"$env:USERPROFILE\\\\.android\\\\avd\" -ErrorAction SilentlyContinue | Select-Object Name)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ridab\\.claude\\projects\\c--Projetos-ToNaEscala\\memory"
