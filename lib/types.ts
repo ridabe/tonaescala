@@ -12,6 +12,7 @@ export type EventStatus = 'active' | 'cancelled' | 'archived';
 export type Event = {
   id: string;
   organization_id: string;
+  parent_event_id: string | null;
   title: string;
   description: string | null;
   category: string | null;
@@ -25,6 +26,8 @@ export type Event = {
   created_at: string;
   updated_at: string;
 };
+
+export type EventWithSubEvents = Event & { sub_events: Event[] };
 
 export type Team = {
   id: string;
@@ -74,6 +77,7 @@ export type Confirmation = {
 
 export type EventCreatePayload = {
   organization_id: string;
+  parent_event_id?: string;
   title: string;
   description?: string;
   category?: string;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -10,15 +10,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { createEvent, generateInvite } from '@/lib/events';
+import { Music, Plus, X, FolderOpen } from 'lucide-react-native';
+import { createEvent, generateInvite, fetchEventById } from '@/lib/events';
+import { setEventSongs, fetchSongs, type Song } from '@/lib/songs';
+import type { Event } from '@/lib/types';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { SongSelector } from '@/components/SongSelector';
 import { analytics } from '@/lib/analytics';
 import { toDatabaseTimestamp } from '@/lib/datetime';
 
@@ -37,6 +41,7 @@ type PickerTarget = 'start_date' | 'start_time' | 'end_time' | null;
 export default function CreateEventScreen() {
   const { org } = useOrganization();
   const { colors } = useColorScheme();
+  const { parentId } = useLocalSearchParams<{ parentId?: string }>();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
@@ -47,6 +52,20 @@ export default function CreateEventScreen() {
   const [endDate, setEndDate] = useState(() => { const d = new Date(); d.setHours(d.getHours() + 2); return d; });
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [loading, setLoading] = useState(false);
+  const [allSongs, setAllSongs] = useState<Song[]>([]);
+  const [selectedSongIds, setSelectedSongIds] = useState<string[]>([]);
+  const [selectorVisible, setSelectorVisible] = useState(false);
+  const [parentEvent, setParentEvent] = useState<Event | null>(null);
+
+  useEffect(() => {
+    if (org) fetchSongs(org.id).then(setAllSongs).catch(() => {});
+  }, [org]);
+
+  useEffect(() => {
+    if (parentId) {
+      fetchEventById(parentId).then(setParentEvent).catch(() => {});
+    }
+  }, [parentId]);
 
   function handlePickerChange(_: unknown, selected?: Date) {
     if (!selected) { setPickerTarget(null); return; }
@@ -76,6 +95,7 @@ export default function CreateEventScreen() {
     try {
       const ev = await createEvent({
         organization_id: org.id,
+        parent_event_id: parentId || undefined,
         title: title.trim(),
         category: category || undefined,
         location: location.trim() || undefined,
@@ -85,6 +105,9 @@ export default function CreateEventScreen() {
         end_date: toDatabaseTimestamp(endDate),
       });
       await generateInvite(ev.id);
+      if (selectedSongIds.length > 0) {
+        await setEventSongs(ev.id, selectedSongIds);
+      }
       analytics.track('event_created', { event_id: ev.id, organization_id: org.id });
       router.replace(`/eventos/${ev.id}`);
     } catch (e: any) {
@@ -101,11 +124,29 @@ export default function CreateEventScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScreenHeader title="Novo evento" fallbackHref="/(tabs)/eventos" />
+      <ScreenHeader
+        title={parentEvent ? 'Novo sub-evento' : 'Novo evento'}
+        fallbackHref={parentEvent ? `/eventos/${parentEvent.id}` : '/(tabs)/eventos'}
+      />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        {/* Evento mestre (somente se for sub-evento) */}
+        {parentEvent && (
+          <View style={[styles.parentBanner, { backgroundColor: parentEvent.color + '18', borderColor: parentEvent.color + '44' }]}>
+            <FolderOpen size={16} color={parentEvent.color} strokeWidth={2} />
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <Text style={[Typography.micro, { color: parentEvent.color, fontWeight: '700', letterSpacing: 0.5 }]}>
+                EVENTO MESTRE
+              </Text>
+              <Text style={[Typography.bodyStrong, { color: parentEvent.color }]} numberOfLines={1}>
+                {parentEvent.title}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Título */}
-        <Label>TÍTULO *</Label>
+        <Label mt={!!parentEvent}>TÍTULO *</Label>
         <TextInput
           style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
           placeholder="Ex: Culto de Domingo"
@@ -194,10 +235,58 @@ export default function CreateEventScreen() {
           textAlignVertical="top"
         />
 
+        {/* Músicas */}
+        <Label mt>MÚSICAS DO EVENTO</Label>
+        <TouchableOpacity
+          style={[styles.addSongsBtn, { borderColor: primary, backgroundColor: primary + '10' }]}
+          onPress={() => setSelectorVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar músicas"
+        >
+          <Music size={18} color={primary} strokeWidth={2} />
+          <Text style={[Typography.bodyStrong, { color: primary, flex: 1, marginLeft: Spacing.sm }]}>
+            {selectedSongIds.length === 0
+              ? 'Adicionar músicas'
+              : `${selectedSongIds.length} música${selectedSongIds.length === 1 ? '' : 's'} selecionada${selectedSongIds.length === 1 ? '' : 's'}`}
+          </Text>
+          <Plus size={18} color={primary} strokeWidth={2.5} />
+        </TouchableOpacity>
+        {selectedSongIds.length > 0 && (
+          <View style={styles.selectedSongs}>
+            {selectedSongIds.map((sid) => {
+              const s = allSongs.find((x) => x.id === sid);
+              if (!s) return null;
+              return (
+                <View key={sid} style={[styles.songChip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Text style={[Typography.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                    {s.title}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setSelectedSongIds((prev) => prev.filter((x) => x !== sid))}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${s.title}`}
+                  >
+                    <X size={14} color={colors.textMuted} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
         <View style={{ marginTop: Spacing.xl }}>
           <Button label="Salvar evento" onPress={handleSave} loading={loading} />
         </View>
       </ScrollView>
+
+      <SongSelector
+        visible={selectorVisible}
+        orgId={org?.id ?? ''}
+        selectedIds={selectedSongIds}
+        onConfirm={setSelectedSongIds}
+        onClose={() => setSelectorVisible(false)}
+      />
 
       {pickerTarget && (
         <DateTimePicker
@@ -224,6 +313,14 @@ function Label({ children, mt }: { children: string; mt?: boolean }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+  parentBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
   input: {
     borderWidth: 1,
     borderRadius: Radius.md,
@@ -247,4 +344,30 @@ const styles = StyleSheet.create({
   timeCol: { flex: 1 },
   colorRow: { flexDirection: 'row', gap: Spacing.md },
   colorDot: { width: 32, height: 32, borderRadius: Radius.full },
+  addSongsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    minHeight: Layout.minTouchTarget,
+    borderStyle: 'dashed',
+  },
+  selectedSongs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  songChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    maxWidth: 200,
+  },
 });

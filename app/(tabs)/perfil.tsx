@@ -1,15 +1,18 @@
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  ChevronRight,
   CreditCard,
   LogOut,
   Mail,
+  Music,
   ShieldCheck,
   Sparkles,
   UserRound,
 } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { useSession } from '@/hooks/useSession';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -138,6 +141,16 @@ export default function PerfilScreen() {
           </View>
         </View>
 
+        <SectionTitle label="Configuracoes" />
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <NavRow
+            icon={Music}
+            label="Biblioteca de Musicas"
+            subtitle="Gerenciar catalogo da organizacao"
+            onPress={() => router.push('/musicas')}
+          />
+        </View>
+
         <SectionTitle label="Sessao" />
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <InfoRow icon={ShieldCheck} label="Ultimo acesso" value={formatDate(user?.last_sign_in_at)} last />
@@ -161,6 +174,37 @@ function SectionTitle({ label }: { label: string }) {
     <Text style={[Typography.caption, styles.sectionTitle, { color: colors.textMuted }]}>
       {label.toUpperCase()}
     </Text>
+  );
+}
+
+function NavRow({
+  icon: Icon,
+  label,
+  subtitle,
+  onPress,
+}: {
+  icon: typeof Music;
+  label: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  const { colors } = useColorScheme();
+  return (
+    <TouchableOpacity
+      style={styles.navRow}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={[styles.navIcon, { backgroundColor: Colors.brand.primarySoft }]}>
+        <Icon size={20} color={Colors.brand.primary} strokeWidth={2} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[Typography.bodyStrong, { color: colors.text }]}>{label}</Text>
+        <Text style={[Typography.caption, { color: colors.textMuted }]}>{subtitle}</Text>
+      </View>
+      <ChevronRight size={18} color={colors.textMuted} strokeWidth={2} />
+    </TouchableOpacity>
   );
 }
 
@@ -269,5 +313,20 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     padding: Spacing.md,
     marginTop: Spacing.md,
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    minHeight: 64,
+  },
+  navIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

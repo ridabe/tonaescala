@@ -12,7 +12,7 @@ import {
   TextInput,
 } from 'react-native';
 import { router } from 'expo-router';
-import { CalendarDays, MapPin, Clock, Check, X, LogOut, Users } from 'lucide-react-native';
+import { CalendarDays, MapPin, Clock, Check, X, LogOut, Music, Users } from 'lucide-react-native';
 import {
   getAssignmentRosterByGuestEventEmail,
   getAssignmentsByGuestEventEmail,
@@ -22,6 +22,7 @@ import {
   type GuestAssignment,
   type GuestEventSummary,
 } from '@/lib/assignments';
+import { fetchEventSongsByInvite, type GuestEventSong } from '@/lib/songs';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
@@ -67,6 +68,7 @@ export default function GuestEventScreen() {
   const [session, setSession] = useState<{ inviteCode: string; email: string } | null>(null);
   const [declineTarget, setDeclineTarget] = useState<GuestAssignment | null>(null);
   const [declineReason, setDeclineReason] = useState('');
+  const [eventSongs, setEventSongs] = useState<GuestEventSong[]>([]);
 
   const load = useCallback(async (showLoader = true, eventId?: string | null) => {
     if (showLoader) setLoading(true);
@@ -94,9 +96,10 @@ export default function GuestEventScreen() {
         events.find((item) => item.is_current_invite)?.event_id ??
         events[0].event_id;
 
-      const [items, rosterItems] = await Promise.all([
+      const [items, rosterItems, songs] = await Promise.all([
         getAssignmentsByGuestEventEmail(inviteCode, email, targetEventId),
         getAssignmentRosterByGuestEventEmail(inviteCode, email, targetEventId),
+        fetchEventSongsByInvite(inviteCode, targetEventId).catch(() => [] as GuestEventSong[]),
       ]);
 
       if (items.length === 0) {
@@ -109,6 +112,7 @@ export default function GuestEventScreen() {
       setSelectedEventId(targetEventId);
       setAssignments(items);
       setRoster(rosterItems);
+      setEventSongs(songs);
     } catch (err) {
       reportError(err, { context: 'GuestEventScreen.load' });
       setLoadError('Nao foi possivel carregar sua convocacao. Confira o codigo e email.');
@@ -306,6 +310,39 @@ export default function GuestEventScreen() {
             </Text>
           ) : null}
         </Card>
+
+        {eventSongs.length > 0 ? (
+          <View>
+            <Text style={[Typography.caption, styles.sectionLabel, { color: colors.textMuted }]}>
+              MUSICAS DO EVENTO
+            </Text>
+            {eventSongs.map((song) => {
+              const activeKey = song.selected_key ?? song.default_key;
+              return (
+                <View key={song.song_id} style={[styles.songRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Music size={18} color={Colors.brand.primary} strokeWidth={2} style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[Typography.bodyStrong, { color: colors.text }]} numberOfLines={1}>
+                      {song.title}
+                    </Text>
+                    {song.artist ? (
+                      <Text style={[Typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+                        {song.artist}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {activeKey ? (
+                    <View style={[styles.keyBadge, { backgroundColor: Colors.brand.primarySoft }]}>
+                      <Text style={[Typography.micro, { color: Colors.brand.primary, fontWeight: '700' }]}>
+                        {activeKey}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
 
         <View>
           <Text style={[Typography.caption, styles.sectionLabel, { color: colors.textMuted }]}>
@@ -562,5 +599,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  songRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  keyBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
   },
 });

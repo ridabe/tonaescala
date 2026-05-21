@@ -11,18 +11,18 @@ export const authRedirectTo = 'tonaescala://auth/callback';
 
 function dismissOAuthBrowser() {
   try {
-    const dismissResult = WebBrowser.dismissBrowser() as unknown;
-    if (dismissResult && typeof (dismissResult as Promise<unknown>).catch === 'function') {
-      (dismissResult as Promise<unknown>).catch(() => {});
+    const result = WebBrowser.dismissBrowser() as unknown;
+    // Suppress any Promise rejection from dismissBrowser without crashing
+    if (result != null && typeof (result as { then?: unknown }).then === 'function') {
+      (result as Promise<unknown>).then(undefined, () => {});
     }
   } catch {
-    // Browser may already be closed or unavailable on the current platform.
+    // dismissBrowser is not available on all platforms/versions.
   }
-
   try {
     WebBrowser.dismissAuthSession();
   } catch {
-    // Auth session dismissal is best effort.
+    // Best effort.
   }
 }
 
@@ -71,11 +71,17 @@ export async function signInWithGoogle() {
 
   const deepLinkResult = new Promise<{ type: 'success'; url: string }>((resolve) => {
     subscription = Linking.addEventListener('url', ({ url }) => {
-      if (__DEV__) {
-        console.log('[OAuth] deep link received', url);
+      try {
+        if (__DEV__) {
+          console.log('[OAuth] deep link received', url);
+        }
+        dismissOAuthBrowser();
+        resolve({ type: 'success', url });
+      } catch (e) {
+        if (__DEV__) {
+          console.warn('[OAuth] error in deep link handler', e);
+        }
       }
-      dismissOAuthBrowser();
-      resolve({ type: 'success', url });
     });
   });
 
