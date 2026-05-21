@@ -16,8 +16,9 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   CalendarDays, MapPin, MoreVertical, Plus, Share2, Tag,
   Users, ClipboardList, Info, Trash2, Clock, AlertTriangle, UserCheck, Mail,
+  FolderOpen, GitBranch,
 } from 'lucide-react-native';
-import { fetchEventById, archiveEvent, deleteEvent } from '@/lib/events';
+import { fetchEventById, archiveEvent, deleteEvent, fetchSubEvents } from '@/lib/events';
 import { fetchTeams, createTeam, deleteTeam } from '@/lib/teams';
 import { fetchSchedules, deleteSchedule } from '@/lib/schedules';
 import { deleteEventAssignment, getEventAssignmentsForOrganizer, type EventAssignment } from '@/lib/assignments';
@@ -84,6 +85,8 @@ export default function EventDetailScreen() {
   const insets = useSafeAreaInsets();
 
   const [event, setEvent] = useState<Event | null>(null);
+  const [subEvents, setSubEvents] = useState<Event[]>([]);
+  const [parentEvent, setParentEvent] = useState<Event | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [assignments, setAssignments] = useState<EventAssignment[]>([]);
@@ -120,6 +123,13 @@ export default function EventDetailScreen() {
       setParticipants(pts);
       setAssignments(asg);
       setEmailCampaigns(campaigns);
+      // Sub-events and parent
+      const [subs, parent] = await Promise.all([
+        fetchSubEvents(id),
+        ev?.parent_event_id ? fetchEventById(ev.parent_event_id) : Promise.resolve(null),
+      ]);
+      setSubEvents(subs);
+      setParentEvent(parent);
       if (org) {
         const t = await fetchTeams(org.id);
         setTeams(t);
@@ -340,6 +350,21 @@ export default function EventDetailScreen() {
           </TouchableOpacity>
         }
       />
+
+      {/* Breadcrumb for sub-events */}
+      {parentEvent && (
+        <TouchableOpacity
+          style={[styles.breadcrumb, { backgroundColor: parentEvent.color + '14', borderBottomColor: parentEvent.color + '33' }]}
+          onPress={() => router.push(`/eventos/${parentEvent.id}`)}
+          accessibilityRole="link"
+          accessibilityLabel={`Voltar para evento mestre: ${parentEvent.title}`}
+        >
+          <FolderOpen size={14} color={parentEvent.color} strokeWidth={2} />
+          <Text style={[Typography.caption, { color: parentEvent.color, marginLeft: Spacing.xs, flex: 1 }]} numberOfLines={1}>
+            {parentEvent.title}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Color accent bar */}
       <View style={[styles.accentBar, { backgroundColor: event.color }]} />
@@ -794,6 +819,56 @@ export default function EventDetailScreen() {
                 <Text style={[Typography.body, { color: colors.text, flex: 1 }]}>{event.description}</Text>
               </View>
             )}
+            {/* Sub-events section */}
+            {subEvents.length > 0 && (
+              <View style={{ marginTop: Spacing.lg }}>
+                <View style={styles.subEventsHeader}>
+                  <GitBranch size={16} color={event.color} strokeWidth={2} />
+                  <Text style={[Typography.caption, { color: event.color, marginLeft: Spacing.xs, letterSpacing: 0.5, fontWeight: '700' }]}>
+                    SUB-EVENTOS ({subEvents.length})
+                  </Text>
+                </View>
+                {subEvents.map((sub) => (
+                  <TouchableOpacity
+                    key={sub.id}
+                    style={[styles.subEventInfoRow, { borderLeftColor: sub.color || event.color, backgroundColor: colors.surface }]}
+                    onPress={() => router.push(`/eventos/${sub.id}`)}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Sub-evento ${sub.title}`}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[Typography.bodyStrong, { color: colors.text }]} numberOfLines={1}>
+                        {sub.title}
+                      </Text>
+                      <Text style={[Typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
+                        {new Date(sub.start_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {' · '}
+                        {new Date(sub.start_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                <View style={{ marginTop: Spacing.sm }}>
+                  <Button
+                    label="Criar sub-evento"
+                    variant="outline"
+                    icon={Plus}
+                    onPress={() => router.push(`/eventos/create?parentId=${id}`)}
+                  />
+                </View>
+              </View>
+            )}
+            {subEvents.length === 0 && !event.parent_event_id && (
+              <View style={{ marginTop: Spacing.lg }}>
+                <Button
+                  label="Criar sub-evento"
+                  variant="ghost"
+                  icon={GitBranch}
+                  onPress={() => router.push(`/eventos/create?parentId=${id}`)}
+                />
+              </View>
+            )}
+
             <View style={{ marginTop: Spacing.lg }}>
               <Button label="Editar evento" variant="outline" onPress={() => router.push(`/eventos/${id}/edit`)} />
             </View>
@@ -821,6 +896,17 @@ export default function EventDetailScreen() {
             >
               <Text style={[Typography.body, { color: colors.text }]}>Editar evento</Text>
             </TouchableOpacity>
+            {!event?.parent_event_id && (
+              <>
+                <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => { setMenuVisible(false); router.push(`/eventos/create?parentId=${id}`); }}
+                >
+                  <Text style={[Typography.body, { color: colors.text }]}>Criar sub-evento</Text>
+                </TouchableOpacity>
+              </>
+            )}
             <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); handleArchive(); }}>
               <Text style={[Typography.body, { color: Colors.status.danger }]}>Arquivar evento</Text>
@@ -931,6 +1017,13 @@ function InfoRow({ icon: Icon, label, value, colors }: { icon: any; label: strin
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  breadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+  },
   accentBar: { height: 4 },
   statsRow: {
     flexDirection: 'row',
@@ -1040,6 +1133,19 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   infoSection: { gap: Spacing.xs },
+  subEventsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  subEventInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 3,
+    borderRadius: Radius.sm,
+    padding: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

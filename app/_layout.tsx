@@ -34,6 +34,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="setup-organization" />
+          <Stack.Screen name="musicas" />
           <Stack.Screen name="enter-event" />
           <Stack.Screen name="guest-event" />
           <Stack.Screen name="scan-qr" />

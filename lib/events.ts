@@ -1,11 +1,65 @@
 import { supabase } from './supabase';
-import type { Event, EventCreatePayload } from './types';
+import type { Event, EventCreatePayload, EventWithSubEvents } from './types';
 
 export async function fetchEvents(orgId: string): Promise<Event[]> {
   const { data, error } = await supabase
     .from('events')
     .select('*')
     .eq('organization_id', orgId)
+    .neq('status', 'archived')
+    .order('start_date', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchEventsWithSubEvents(orgId: string): Promise<EventWithSubEvents[]> {
+  const [mastersRes, subsRes] = await Promise.all([
+    supabase
+      .from('events')
+      .select('*')
+      .eq('organization_id', orgId)
+      .neq('status', 'archived')
+      .is('parent_event_id', null)
+      .order('start_date', { ascending: true }),
+    supabase
+      .from('events')
+      .select('*')
+      .eq('organization_id', orgId)
+      .not('parent_event_id', 'is', null)
+      .order('start_date', { ascending: true }),
+  ]);
+  if (mastersRes.error) throw mastersRes.error;
+  if (subsRes.error) throw subsRes.error;
+
+  const subsByParent = new Map<string, Event[]>();
+  for (const sub of subsRes.data ?? []) {
+    const pid = sub.parent_event_id as string;
+    if (!subsByParent.has(pid)) subsByParent.set(pid, []);
+    subsByParent.get(pid)!.push(sub);
+  }
+
+  return (mastersRes.data ?? []).map((ev) => ({
+    ...ev,
+    sub_events: subsByParent.get(ev.id) ?? [],
+  }));
+}
+
+export async function fetchSubEvents(parentEventId: string): Promise<Event[]> {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('parent_event_id', parentEventId)
+    .order('start_date', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchMasterEvents(orgId: string): Promise<Event[]> {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('organization_id', orgId)
+    .is('parent_event_id', null)
     .neq('status', 'archived')
     .order('start_date', { ascending: true });
   if (error) throw error;

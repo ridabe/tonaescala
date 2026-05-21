@@ -12,12 +12,16 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Music, Plus, X } from 'lucide-react-native';
 import { fetchEventById, updateEvent } from '@/lib/events';
+import { fetchEventSongs, fetchSongs, setEventSongs, type Song } from '@/lib/songs';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { Typography, Spacing, Radius, Layout } from '@/constants/Theme';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { SongSelector } from '@/components/SongSelector';
 import { toDatabaseTimestamp } from '@/lib/datetime';
 
 const CATEGORIES = ['Culto', 'Ensaio', 'Conferência', 'Reunião', 'Outro'];
@@ -34,6 +38,7 @@ type PickerTarget = 'start_date' | 'start_time' | 'end_time' | null;
 
 export default function EditEventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { org } = useOrganization();
   const { colors } = useColorScheme();
 
   const [title, setTitle] = useState('');
@@ -45,6 +50,9 @@ export default function EditEventScreen() {
   const [endDate, setEndDate] = useState(new Date());
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [loading, setLoading] = useState(false);
+  const [allSongs, setAllSongs] = useState<Song[]>([]);
+  const [selectedSongIds, setSelectedSongIds] = useState<string[]>([]);
+  const [selectorVisible, setSelectorVisible] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -58,7 +66,12 @@ export default function EditEventScreen() {
       setStartDate(new Date(ev.start_date));
       if (ev.end_date) setEndDate(new Date(ev.end_date));
     });
+    fetchEventSongs(id).then((es) => setSelectedSongIds(es.map((e) => e.song_id)));
   }, [id]);
+
+  useEffect(() => {
+    if (org) fetchSongs(org.id).then(setAllSongs).catch(() => {});
+  }, [org]);
 
   function handlePickerChange(_: unknown, selected?: Date) {
     if (!selected) { setPickerTarget(null); return; }
@@ -94,6 +107,7 @@ export default function EditEventScreen() {
         start_date: toDatabaseTimestamp(startDate),
         end_date: toDatabaseTimestamp(endDate),
       });
+      await setEventSongs(id, selectedSongIds);
       router.back();
     } catch (e: any) {
       Alert.alert('Erro ao salvar', e.message);
@@ -189,10 +203,58 @@ export default function EditEventScreen() {
           textAlignVertical="top"
         />
 
+        {/* Músicas */}
+        <Label mt>MÚSICAS DO EVENTO</Label>
+        <TouchableOpacity
+          style={[styles.addSongsBtn, { borderColor: primary, backgroundColor: primary + '10' }]}
+          onPress={() => setSelectorVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar músicas"
+        >
+          <Music size={18} color={primary} strokeWidth={2} />
+          <Text style={[Typography.bodyStrong, { color: primary, flex: 1, marginLeft: Spacing.sm }]}>
+            {selectedSongIds.length === 0
+              ? 'Adicionar músicas'
+              : `${selectedSongIds.length} música${selectedSongIds.length === 1 ? '' : 's'} selecionada${selectedSongIds.length === 1 ? '' : 's'}`}
+          </Text>
+          <Plus size={18} color={primary} strokeWidth={2.5} />
+        </TouchableOpacity>
+        {selectedSongIds.length > 0 && (
+          <View style={styles.selectedSongs}>
+            {selectedSongIds.map((sid) => {
+              const s = allSongs.find((x) => x.id === sid);
+              if (!s) return null;
+              return (
+                <View key={sid} style={[styles.songChip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Text style={[Typography.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                    {s.title}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setSelectedSongIds((prev) => prev.filter((x) => x !== sid))}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${s.title}`}
+                  >
+                    <X size={14} color={colors.textMuted} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
         <View style={{ marginTop: Spacing.xl }}>
           <Button label="Salvar alterações" onPress={handleSave} loading={loading} />
         </View>
       </ScrollView>
+
+      <SongSelector
+        visible={selectorVisible}
+        orgId={org?.id ?? ''}
+        selectedIds={selectedSongIds}
+        onConfirm={setSelectedSongIds}
+        onClose={() => setSelectorVisible(false)}
+      />
 
       {pickerTarget && (
         <DateTimePicker
@@ -233,4 +295,30 @@ const styles = StyleSheet.create({
   timeCol: { flex: 1 },
   colorRow: { flexDirection: 'row', gap: Spacing.md },
   colorDot: { width: 32, height: 32, borderRadius: Radius.full },
+  addSongsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    minHeight: Layout.minTouchTarget,
+    borderStyle: 'dashed',
+  },
+  selectedSongs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  songChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    maxWidth: 200,
+  },
 });
