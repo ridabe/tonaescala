@@ -18,7 +18,9 @@ export default function AuthCallbackScreen() {
     if (!url || processed.current) return;
     if (!url.includes('code=') && !url.includes('access_token=')) return;
     processed.current = true;
-    createSessionFromUrl(url).catch(() => {});
+    createSessionFromUrl(url)
+      .then(() => router.replace('/'))
+      .catch(() => router.replace('/(auth)/login'));
   }, [url]);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function AuthCallbackScreen() {
 
   useEffect(() => {
     if (session) {
-      router.replace('/(tabs)/agenda');
+      router.replace('/');
     }
   }, [session]);
 

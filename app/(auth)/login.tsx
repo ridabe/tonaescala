@@ -141,7 +141,11 @@ export default function LoginScreen() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) { Alert.alert('Erro ao entrar', error.message); return; }
+    if (error) {
+      if (error.message === 'Auth session missing!') return;
+      Alert.alert('Erro ao entrar', error.message);
+      return;
+    }
     offerBiometricEnrollment(email, password);
   }
 
@@ -175,7 +179,9 @@ export default function LoginScreen() {
         return;
       }
       const { error } = await supabase.auth.signInWithPassword(creds);
-      if (error) Alert.alert('Erro ao entrar', error.message);
+      if (error && error.message !== 'Auth session missing!') {
+        Alert.alert('Erro ao entrar', error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -193,7 +199,8 @@ export default function LoginScreen() {
   async function handleGoogleLogin() {
     setLoading(true);
     try {
-      await signInWithGoogle();
+      const session = await signInWithGoogle();
+      if (session) router.replace('/');
     } catch (error: any) {
       Alert.alert('Erro', error.message ?? 'Não foi possível entrar com Google.');
     } finally {

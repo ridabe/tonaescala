@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -58,7 +57,6 @@ function needleTip(angleDeg: number) {
 const ARC_START = centsToAngle(-50); // -170°
 const ARC_END   = centsToAngle(50);  //  -10°
 const ARC_WARN  = centsToAngle(-25);
-const ARC_TUNE  = centsToAngle(0);   //  -90°
 const ARC_WARN2 = centsToAngle(25);
 
 const TICK_ANGLES = [-80, -55, -30, 0, 30, 55, 80].map((c) => ({
@@ -133,23 +131,24 @@ function freqToNote(f){
 }
 var ctx,analyser,fbuf,stream,running=false,smooth=0;
 function send(obj){try{window.ReactNativeWebView.postMessage(JSON.stringify(obj));}catch(e){}}
-function start(){
+async function start(){
   try {
+    if(running){send({type:'started'});return;}
+    send({type:'starting'});
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-      send({type:'error',msg:'getUserMedia not supported — insecure context'});
+      send({type:'error',msg:'Microfone indisponivel no WebView. Origem: '+location.href});
       return;
     }
-    navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:false,autoGainControl:false,echoCancellation:false},video:false})
-    .then(function(s){
-      stream=s;
-      ctx=new(window.AudioContext||window.webkitAudioContext)();
-      analyser=ctx.createAnalyser();analyser.fftSize=2048;
-      ctx.createMediaStreamSource(s).connect(analyser);
-      fbuf=new Float32Array(analyser.fftSize);
-      running=true;
-      send({type:'started'});
-      tick();
-    }).catch(function(e){send({type:'error',msg:e.message||'getUserMedia denied'});});
+    stream=await navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:false,autoGainControl:false,echoCancellation:false},video:false});
+    ctx=new(window.AudioContext||window.webkitAudioContext)();
+    if(ctx.state==='suspended'&&ctx.resume)await ctx.resume();
+    analyser=ctx.createAnalyser();analyser.fftSize=2048;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    fbuf=new Float32Array(analyser.fftSize);
+    running=true;
+    send({type:'started',state:ctx.state});
+    tick();
+    return;
   } catch(e){send({type:'error',msg:e.message||'start exception'});}
 }
 function stop(){
@@ -179,6 +178,7 @@ function tick(){
 function onMsg(raw){try{var m=JSON.parse(raw);if(m.cmd==='start')start();else if(m.cmd==='stop')stop();}catch(e){}}
 document.addEventListener('message',function(e){onMsg(e.data);});
 window.addEventListener('message',function(e){onMsg(e.data);});
+send({type:'ready'});
 <\/script></body></html>`;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -202,6 +202,7 @@ export default function AfinadorScreen() {
 
   const webviewRef = useRef<WebView>(null);
   const [webviewReady, setWebviewReady] = useState(false);
+  const startTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const needleAnim = useRef(new Animated.Value(-90)).current;
   const [needlePos, setNeedlePos] = useState(needleTip(-90));
   const volBars = useRef(
@@ -245,7 +246,15 @@ export default function AfinadorScreen() {
     (e: WebViewMessageEvent) => {
       try {
         const msg = JSON.parse(e.nativeEvent.data);
-        if (msg.type === 'started') {
+        if (msg.type === 'ready') {
+          setWebviewReady(true);
+        } else if (msg.type === 'starting') {
+          setListening(true);
+        } else if (msg.type === 'started') {
+          if (startTimeoutRef.current) {
+            clearTimeout(startTimeoutRef.current);
+            startTimeoutRef.current = null;
+          }
           setListening(true);
         } else if (msg.type === 'pitch') {
           const data: PitchData = { note: msg.note, octave: msg.octave, cents: msg.cents, hz: msg.hz };
@@ -258,6 +267,10 @@ export default function AfinadorScreen() {
         } else if (msg.type === 'silence') {
           setVolume(msg.vol ?? 0);
         } else if (msg.type === 'error') {
+          if (startTimeoutRef.current) {
+            clearTimeout(startTimeoutRef.current);
+            startTimeoutRef.current = null;
+          }
           setListening(false);
           Alert.alert(
             'Permissão negada',
@@ -273,9 +286,17 @@ export default function AfinadorScreen() {
   );
 
   // ─── Controls ─────────────────────────────────────────────────────────────
+  useEffect(() => () => {
+    if (startTimeoutRef.current) clearTimeout(startTimeoutRef.current);
+  }, []);
+
   async function toggleListening() {
     if (listening) {
-      webviewRef.current?.injectJavaScript(`onMsg('{"cmd":"stop"}');true`);
+      webviewRef.current?.postMessage(JSON.stringify({ cmd: 'stop' }));
+      if (startTimeoutRef.current) {
+        clearTimeout(startTimeoutRef.current);
+        startTimeoutRef.current = null;
+      }
       setListening(false);
       setPitch(null);
       setActiveString(null);
@@ -297,7 +318,16 @@ export default function AfinadorScreen() {
       }
     }
 
-    webviewRef.current?.injectJavaScript(`onMsg('{"cmd":"start"}');true`);
+    setListening(true);
+    webviewRef.current?.postMessage(JSON.stringify({ cmd: 'start' }));
+    startTimeoutRef.current = setTimeout(() => {
+      startTimeoutRef.current = null;
+      setListening(false);
+      Alert.alert(
+        'Microfone nao iniciou',
+        'A permissao foi concedida, mas o Android nao liberou a captura de audio para o afinador. Feche e abra a tela novamente; se persistir, revise a permissao de Microfone nas configuracoes do app.',
+      );
+    }, 5000);
   }
 
   function reset() {
@@ -572,24 +602,20 @@ export default function AfinadorScreen() {
       </ScrollView>
 
       {/* Hidden WebView — audio processing engine */}
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <WebView
         ref={webviewRef}
         style={styles.hidden}
-        source={{ html: TUNER_HTML, baseUrl: 'https://localhost' }}
+        source={{ html: TUNER_HTML, baseUrl: 'https://localhost/' }}
         javaScriptEnabled
         mediaPlaybackRequiresUserAction={false}
+        mediaCapturePermissionGrantType="grant"
         allowsInlineMediaPlayback
+        androidLayerType="hardware"
         originWhitelist={['*']}
         onMessage={handleMessage}
-        onLoadEnd={() => setWebviewReady(true)}
-        {...(Platform.OS === 'android'
-          ? {
-              onPermissionRequest: (e: any) => {
-                e.nativeEvent.request.grant(e.nativeEvent.request.resources);
-              },
-            }
-          : {})}
+        onLoadEnd={() => {
+          webviewRef.current?.injectJavaScript('send({type:"ready"});true;');
+        }}
       />
     </View>
   );
@@ -598,7 +624,7 @@ export default function AfinadorScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: 40 },
-  hidden: { width: 1, height: 1, position: 'absolute', opacity: 0 },
+  hidden: { width: 2, height: 2, position: 'absolute', opacity: 0.01 },
 
   modeTabs: {
     flexDirection: 'row',

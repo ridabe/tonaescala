@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export const authRedirectTo = 'tonaescala://auth/callback';
+export const authRedirectTo = 'tonaescala:///auth/callback';
 
 export async function createSessionFromUrl(url: string) {
   const { params, errorCode } = QueryParams.getQueryParams(url);

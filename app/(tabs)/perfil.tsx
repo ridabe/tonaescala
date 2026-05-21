@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import {
   Building2,
   CalendarDays,
@@ -122,7 +123,12 @@ export default function PerfilScreen() {
         text: 'Sair',
         style: 'destructive',
         onPress: async () => {
-          await supabase.auth.signOut();
+          const { error } = await supabase.auth.signOut();
+          if (error && error.message !== 'Auth session missing!') {
+            Alert.alert('Erro ao sair', error.message);
+            return;
+          }
+          router.replace('/(auth)/login');
         },
       },
     ]);

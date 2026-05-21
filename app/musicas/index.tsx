@@ -44,7 +44,11 @@ export default function BibliotecaScreen() {
     }
   }, [org]);
 
-  useFocusEffect(load);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
   const filtered = query.trim()
     ? songs.filter(
