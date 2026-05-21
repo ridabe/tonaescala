@@ -2,7 +2,7 @@
   "expo": {
     "name": "ToNaEscala",
     "slug": "tonaescala",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tonaescala",
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.tonaescala.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "newArchEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
