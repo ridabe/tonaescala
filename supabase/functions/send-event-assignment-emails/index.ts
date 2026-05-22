@@ -125,7 +125,7 @@ function buildEmailHtml(params: {
 
           <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e5e5;border-radius:8px;padding:20px;margin-bottom:24px">
             <tr><td>
-              <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#777;text-transform:uppercase;letter-spacing:.5px">Sua convocação</p>
+              <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#777;text-transform:uppercase;letter-spacing:.5px">Sua escala</p>
               ${params.teamName ? `<p style="margin:0 0 4px;font-size:14px;color:#444"><strong>Equipe:</strong> ${params.teamName}</p>` : ''}
               ${params.role ? `<p style="margin:0 0 4px;font-size:14px;color:#444"><strong>Função:</strong> ${params.role}</p>` : ''}
               ${timeBlock ? `<p style="margin:0 0 4px;font-size:14px;color:#444"><strong>Horário:</strong> ${timeBlock}</p>` : ''}
