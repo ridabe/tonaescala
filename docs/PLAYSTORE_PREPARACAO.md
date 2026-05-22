@@ -1,4 +1,4 @@
-# Preparacao Play Store - ToNaEscala
+# Preparacao Play Store - Minha Escala
 
 Documento de apoio para criar a ficha da Play Store, preparar artes, escrever a descricao da versao e publicar a primeira versao de teste interno.
 
@@ -6,9 +6,9 @@ Documento de apoio para criar a ficha da Play Store, preparar artes, escrever a 
 
 | Campo | Sugestao |
 |---|---|
-| Nome do app | ToNaEscala |
-| Nome curto | ToNaEscala |
-| Pacote Android | `com.tonaescala.app` |
+| Nome do app | Minha Escala |
+| Nome curto | Minha Escala |
+| Pacote Android | `com.minhaescala.app` |
 | Versao atual | `1.0.0` |
 | Version code atual | `1` |
 | Categoria sugerida | Produtividade |
@@ -41,11 +41,11 @@ Crie eventos, convoque equipes e acompanhe respostas em tempo real.
 Texto pronto para a ficha da Play Store:
 
 ```text
-O ToNaEscala ajuda organizadores a montar eventos, equipes e escalas de forma simples, direta e segura pelo celular.
+O Minha Escala ajuda organizadores a montar eventos, equipes e escalas de forma simples, direta e segura pelo celular.
 
 Criado para igrejas, ministerios, equipes de voluntarios e eventos comunitarios, o app reduz a dependencia de planilhas, conversas perdidas em grupos e confirmacoes manuais de ultima hora.
 
-Com o ToNaEscala, o organizador pode:
+Com o Minha Escala, o organizador pode:
 
 - criar eventos com data, horario, local e categoria;
 - montar equipes e definir funcoes;
@@ -57,7 +57,7 @@ Com o ToNaEscala, o organizador pode:
 
 Para convidados, a entrada e simples: basta usar o codigo do evento ou QR Code junto com o email cadastrado na convocacao. Nao e necessario criar senha para responder a uma escala. A pessoa ve os dados do evento, equipe, funcao, horario, observacoes e pode aceitar ou recusar a participacao.
 
-O ToNaEscala foi pensado para quem organiza pessoas que servem juntas: louvor, recepcao, midia, infantil, apoio, producao, eventos especiais e outras equipes que precisam de clareza sobre quem faz o que, quando e onde.
+O Minha Escala foi pensado para quem organiza pessoas que servem juntas: louvor, recepcao, midia, infantil, apoio, producao, eventos especiais e outras equipes que precisam de clareza sobre quem faz o que, quando e onde.
 
 Principais recursos:
 
@@ -73,7 +73,7 @@ Principais recursos:
 - notificacoes para organizadores;
 - protecao de acesso para que apenas emails convocados vejam os detalhes do evento.
 
-ToNaEscala: escalas organizadas para pessoas que servem juntas.
+Minha Escala: escalas organizadas para pessoas que servem juntas.
 ```
 
 ## 4. Texto promocional curto
@@ -99,7 +99,7 @@ Limite comum da Play Console para notas de versao: ate 500 caracteres por idioma
 Versao recomendada para teste interno:
 
 ```text
-Primeira versao de teste do ToNaEscala. Inclui criacao de organizacao, eventos, equipes e convocacoes, entrada de convidados por codigo/QR Code e email, aceite ou recusa com justificativa, notificacoes para organizadores e agenda de acompanhamento. Esta versao sera validada com testers internos antes da publicacao.
+Primeira versao de teste do Minha Escala. Inclui criacao de organizacao, eventos, equipes e convocacoes, entrada de convidados por codigo/QR Code e email, aceite ou recusa com justificativa, notificacoes para organizadores e agenda de acompanhamento. Esta versao sera validada com testers internos antes da publicacao.
 ```
 
 Versao mais curta:
@@ -123,8 +123,8 @@ Assets existentes no projeto:
 | `assets/images/icon.png` | Icone do app 1024x1024 | Pronto |
 | `assets/images/adaptive-icon.png` | Icone adaptativo Android | Pronto |
 | `assets/images/splash-icon.png` | Splash screen | Pronto |
-| `img/tonaescala-logo-horizontal.png` | Logo horizontal | Pronto |
-| `img/tonaescala-banner-1600x900.png` | Base para feature graphic ou materiais | Precisa adaptar |
+| `img/minhaescala-logo-horizontal.png` | Logo horizontal | Pronto |
+| `img/minhaescala-banner-1600x900.png` | Base para feature graphic ou materiais | Precisa adaptar |
 | `img/telas sistema.png` | Composicao atual de telas | Referencia, baixa resolucao para Play Store |
 
 ### Feature graphic
@@ -193,7 +193,7 @@ Sugestao:
 O Google Play permite cadastrar texto alternativo nas imagens. Sugestoes:
 
 ```text
-Tela inicial do ToNaEscala com opcoes para organizador e entrada por codigo de evento.
+Tela inicial do Minha Escala com opcoes para organizador e entrada por codigo de evento.
 ```
 
 ```text
@@ -262,7 +262,7 @@ npx eas build --platform android --profile production
 
 Conferir antes:
 
-- `app.json` tem `android.package`: `com.tonaescala.app`;
+- `app.json` tem `android.package`: `com.minhaescala.app`;
 - `android.versionCode` deve subir a cada nova build enviada;
 - `expo.version` representa a versao exibida, hoje `1.0.0`;
 - o app esta conectado ao projeto EAS correto.
@@ -272,7 +272,7 @@ Conferir antes:
 Roteiro pratico:
 
 1. Acesse Play Console.
-2. Abra o app `ToNaEscala`.
+2. Abra o app `Minha Escala`.
 3. Va em `Teste e lancamento` > `Teste` > `Teste interno`.
 4. Na aba de testers, crie uma lista de emails.
 5. Adicione ate 100 contas Google de testers.
@@ -303,7 +303,7 @@ Observacoes:
 Enviar junto com o link de opt-in:
 
 ```text
-Obrigado por testar o ToNaEscala.
+Obrigado por testar o Minha Escala.
 
 Objetivo do teste:
 validar se organizadores conseguem criar eventos, equipes e convocacoes, e se convidados conseguem acessar pelo codigo/QR Code e responder sem criar senha.

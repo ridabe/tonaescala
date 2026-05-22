@@ -103,7 +103,7 @@ Codigo do evento: *{invite_code}*
 O link de entrada segue o mesmo padrao da fase 8:
 
 ```text
-https://app.tonaescala.com/enter-event?invite_code={invite_code}
+https://app.minhaescala.com/enter-event?invite_code={invite_code}
 ```
 
 O telefone do convocado nao e a segunda etapa de validacao. O app continua exigindo o email convocado para liberar os detalhes. O WhatsApp e apenas o canal de entrega da mensagem.

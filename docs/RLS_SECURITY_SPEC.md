@@ -1,8 +1,8 @@
-# RLS SECURITY SPEC - ToNaEscala
+# RLS SECURITY SPEC - Minha Escala
 
 ## 1. Objetivo
 
-Definir o modelo de segurança do ToNaEscala em Supabase/PostgreSQL, garantindo isolamento entre organizações, proteção de dados de participantes e suporte controlado à entrada sem cadastro.
+Definir o modelo de segurança do Minha Escala em Supabase/PostgreSQL, garantindo isolamento entre organizações, proteção de dados de participantes e suporte controlado à entrada sem cadastro.
 
 ## 2. Atores
 

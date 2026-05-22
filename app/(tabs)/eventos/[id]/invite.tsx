@@ -33,7 +33,7 @@ export default function InviteScreen() {
     if (!event?.invite_code) return;
     try {
       await Share.share({
-        message: `Entre no evento "${event.title}" pelo ToNaEscala!\n\nCodigo: ${event.invite_code}`,
+        message: `Entre no evento "${event.title}" pelo Minha Escala!\n\nCodigo: ${event.invite_code}`,
         title: `Convite - ${event.title}`,
       });
     } catch {

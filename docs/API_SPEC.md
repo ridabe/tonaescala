@@ -1,8 +1,8 @@
-# API SPEC - ToNaEscala
+# API SPEC - Minha Escala
 
 ## 1. Objetivo
 
-Definir os contratos de leitura, escrita e automações do ToNaEscala para o MVP. A API será consumida majoritariamente pelo app React Native via `supabase-js`, usando:
+Definir os contratos de leitura, escrita e automações do Minha Escala para o MVP. A API será consumida majoritariamente pelo app React Native via `supabase-js`, usando:
 
 - Data API/PostgREST para CRUD simples.
 - RPC PostgreSQL para operações transacionais.
@@ -371,7 +371,7 @@ Saída:
 ```json
 {
   "invite_code": "TNE-9X4KQ2",
-  "invite_url": "https://tonaescala.app/join/TNE-9X4KQ2",
+  "invite_url": "https://minhaescala.app/join/TNE-9X4KQ2",
   "qr_payload": "TNE-9X4KQ2"
 }
 ```

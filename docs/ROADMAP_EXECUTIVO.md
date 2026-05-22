@@ -1,8 +1,8 @@
-# ROADMAP EXECUTIVO - ToNaEscala
+# ROADMAP EXECUTIVO - Minha Escala
 
 ## 1. Objetivo
 
-Organizar a evolucao do ToNaEscala em fases claras, com entregas verificaveis e foco no menor produto util para igrejas, ministerios e organizadores de eventos.
+Organizar a evolucao do Minha Escala em fases claras, com entregas verificaveis e foco no menor produto util para igrejas, ministerios e organizadores de eventos.
 
 ## 2. Status atual
 
@@ -27,7 +27,7 @@ O MVP tecnico atual valida a base do app, mas o fluxo principal sera ajustado pa
 
 ## 3. Norte do produto
 
-O ToNaEscala vence pela simplicidade:
+O Minha Escala vence pela simplicidade:
 
 - Organizador monta eventos e escalas pelo celular.
 - Convidado entra sem cadastro completo, mas precisa do email previamente convocado.

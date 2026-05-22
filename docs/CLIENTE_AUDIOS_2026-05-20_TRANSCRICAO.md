@@ -4,7 +4,7 @@ Arquivo bruto tecnico: `docs/CLIENTE_AUDIOS_2026-05-20_TRANSCRICAO.json`.
 
 ## Resumo executivo
 
-O cliente ve potencial no ToNaEscala para ministerios musicais grandes. A sugestao central e adicionar recursos de repertorio e preparo musical dentro do fluxo de escala: links de musicas, letras, cifras, versoes oficiais para estudo, materiais de apoio, biblioteca de repertorio e, futuramente, personalizacao por igreja e marketplace/comunidade musical.
+O cliente ve potencial no Minha Escala para ministerios musicais grandes. A sugestao central e adicionar recursos de repertorio e preparo musical dentro do fluxo de escala: links de musicas, letras, cifras, versoes oficiais para estudo, materiais de apoio, biblioteca de repertorio e, futuramente, personalizacao por igreja e marketplace/comunidade musical.
 
 ## Audio 1 - 13.21.28
 

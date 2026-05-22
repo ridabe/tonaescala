@@ -1,8 +1,8 @@
-# DESIGN SYSTEM - ToNaEscala
+# DESIGN SYSTEM - Minha Escala
 
 ## 1. Direção visual
 
-O ToNaEscala deve parecer simples, confiável e rápido. A interface precisa funcionar para coordenadores ocupados, voluntários de diferentes idades e uso frequente em celular.
+O Minha Escala deve parecer simples, confiável e rápido. A interface precisa funcionar para coordenadores ocupados, voluntários de diferentes idades e uso frequente em celular.
 
 Palavras-chave:
 

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Preparar o ToNaEscala para operar como SaaS sem alterar a experiencia visual atual. Nesta fase, o usuario continua usando o app como hoje, mas o backend passa a suportar:
+Preparar o Minha Escala para operar como SaaS sem alterar a experiencia visual atual. Nesta fase, o usuario continua usando o app como hoje, mas o backend passa a suportar:
 
 - multiplos administradores por igreja/instituicao;
 - organizacoes individuais e organizacoes business;

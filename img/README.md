@@ -1,14 +1,14 @@
-# Imagens da marca ToNaEscala
+# Imagens da marca Minha Escala
 
 Arquivos gerados a partir da identidade visual da Proposta 2.
 
 ## Arquivos
 
-- `tonaescala-logo-horizontal.png`: logo horizontal com simbolo e wordmark.
-- `tonaescala-banner.png`: banner original gerado para apresentacoes e documentacao.
-- `tonaescala-banner-1600x900.png`: banner ajustado para proporcao 16:9.
-- `tonaescala-icon-source.png`: icone original gerado.
-- `tonaescala-icon-1024.png`: icone quadrado em 1024x1024 para uso como base do app icon.
+- `minhaescala-logo-horizontal.png`: logo horizontal com simbolo e wordmark.
+- `minhaescala-banner.png`: banner original gerado para apresentacoes e documentacao.
+- `minhaescala-banner-1600x900.png`: banner ajustado para proporcao 16:9.
+- `minhaescala-icon-source.png`: icone original gerado.
+- `minhaescala-icon-1024.png`: icone quadrado em 1024x1024 para uso como base do app icon.
 
 ## Direcao visual
 

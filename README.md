@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="img/tonaescala-logo-horizontal.png" alt="ToNaEscala" width="320" />
+  <img src="img/minhaescala-logo-horizontal.png" alt="Minha Escala" width="320" />
 
   <h3>Escalas organizadas para pessoas que servem juntas.</h3>
 
@@ -17,9 +17,9 @@
 
 ---
 
-## 📱 O que é o ToNaEscala?
+## 📱 O que é o Minha Escala?
 
-O **ToNaEscala** resolve um problema real e cotidiano: organizar quem faz o quê, quando e onde — sem planilhas, sem grupos de WhatsApp bagunçados e sem ligações de última hora.
+O **Minha Escala** resolve um problema real e cotidiano: organizar quem faz o quê, quando e onde — sem planilhas, sem grupos de WhatsApp bagunçados e sem ligações de última hora.
 
 - 🏢 **Organizadores** criam eventos e escalas diretamente no celular
 - 👤 **Participantes** entram em eventos via QR Code ou código, **sem cadastro obrigatório**
@@ -48,7 +48,7 @@ O **ToNaEscala** resolve um problema real e cotidiano: organizar quem faz o quê
 ## 🗂️ Estrutura do projeto
 
 ```
-tonaescala/
+minhaescala/
 ├── app/                    # Telas (Expo Router file-based)
 │   ├── (auth)/             # Grupo de rotas de autenticação
 │   │   └── login.tsx
@@ -86,8 +86,8 @@ tonaescala/
 ### 1. Clone e instale as dependências
 
 ```bash
-git clone https://github.com/ridabe/tonaescala.git
-cd tonaescala
+git clone https://github.com/ridabe/minhaescala.git
+cd minhaescala
 npm install
 ```
 

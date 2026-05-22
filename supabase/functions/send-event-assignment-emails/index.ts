@@ -1,8 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM_EMAIL = Deno.env.get('EMAIL_FROM') ?? 'noreply@tonaescala.com';
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://app.tonaescala.com';
+const FROM_EMAIL = Deno.env.get('EMAIL_FROM') ?? 'noreply@minhaescala.com';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://app.minhaescala.com';
 
 type Assignment = {
   assignment_id: string;
@@ -105,7 +105,7 @@ function buildEmailHtml(params: {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;max-width:560px;width:100%">
         <!-- header -->
         <tr><td style="background:#6c47ff;padding:24px 32px">
-          <p style="margin:0;font-size:20px;font-weight:700;color:#fff">ToNaEscala</p>
+          <p style="margin:0;font-size:20px;font-weight:700;color:#fff">Minha Escala</p>
         </td></tr>
         <!-- body -->
         <tr><td style="padding:32px">
@@ -155,7 +155,7 @@ function buildEmailHtml(params: {
         <!-- footer -->
         <tr><td style="background:#f9f9fb;padding:16px 32px;border-top:1px solid #e5e5e5">
           <p style="margin:0;font-size:12px;color:#999;text-align:center">
-            Este é um email transacional enviado pelo ToNaEscala.
+            Este é um email transacional enviado pelo Minha Escala.
           </p>
         </td></tr>
       </table>

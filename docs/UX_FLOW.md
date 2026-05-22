@@ -1,4 +1,4 @@
-# UX Flow - ToNaEscala
+# UX Flow - Minha Escala
 
 ## 1. Objetivo
 

@@ -2,7 +2,7 @@
 
 ## 1. Contexto
 
-O cliente avaliou a proposta do ToNaEscala e trouxe sugestoes pensando em uma igreja com ministerio grande, citando cerca de 190 musicos, alem de coralistas, orquestra e lideres. A leitura principal e que o app pode deixar de ser apenas uma ferramenta de escala/convocacao e virar tambem um ambiente de preparo musical.
+O cliente avaliou a proposta do Minha Escala e trouxe sugestoes pensando em uma igreja com ministerio grande, citando cerca de 190 musicos, alem de coralistas, orquestra e lideres. A leitura principal e que o app pode deixar de ser apenas uma ferramenta de escala/convocacao e virar tambem um ambiente de preparo musical.
 
 As sugestoes se conectam especialmente a igrejas, bandas, ministerios de louvor e eventos musicais, com foco em:
 
@@ -92,7 +92,7 @@ Problema que resolve:
 
 - adiciona utilidade diaria ao app;
 - aumenta frequencia de uso por musicos;
-- reforca posicionamento do ToNaEscala como ferramenta para ministerio musical, nao apenas agenda.
+- reforca posicionamento do Minha Escala como ferramenta para ministerio musical, nao apenas agenda.
 
 ### 2.5 Personalizacao por igreja/ministerio
 
@@ -138,7 +138,7 @@ Risco:
 
 ## 3. Leitura de produto
 
-As sugestoes criam um novo eixo para o ToNaEscala:
+As sugestoes criam um novo eixo para o Minha Escala:
 
 ```text
 Escala + Convocacao + Repertorio + Estudo musical
@@ -275,7 +275,7 @@ Dependencias tecnicas:
 - novos campos em `organizations`;
 - upload em storage;
 - validacao de tamanho/tipo de imagem;
-- fallback para marca ToNaEscala.
+- fallback para marca Minha Escala.
 
 ### Fase 12 - Afinador para musicos
 
@@ -365,7 +365,7 @@ Para transformar a sugestao em entrega rapida, o MVP musical deveria conter apen
 6. abertura dos links externos;
 7. documentar biblioteca/marketplace como evolucao, nao como primeira entrega.
 
-Esse recorte preserva o ToNaEscala como app de organizacao de escalas e adiciona a camada musical sem explodir o escopo.
+Esse recorte preserva o Minha Escala como app de organizacao de escalas e adiciona a camada musical sem explodir o escopo.
 
 ## 7. Modelo de dados inicial sugerido
 

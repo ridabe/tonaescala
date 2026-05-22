@@ -1,12 +1,12 @@
-# ToNaEscala - Índice de Documentação
+# Minha Escala - Índice de Documentação
 
-Este diretório reúne a documentação de produto, técnica e execução do ToNaEscala.
+Este diretório reúne a documentação de produto, técnica e execução do Minha Escala.
 
 ## Documentos existentes
 
-- `PRD_ToNaEscala_COMPLETO.pdf`: visão de produto, público-alvo, MVP, diferenciais e estratégia.
-- `ToNaEscala_SPEC_COMPLETO.pdf`: especificação técnica geral, arquitetura, stack, módulos e roadmap técnico.
-- `ToNaEscala_DATABASE_SPEC.pdf`: especificação inicial do banco de dados, entidades, índices e regras.
+- `PRD_MINHA_ESCALA_COMPLETO.pdf`: visão de produto, público-alvo, MVP, diferenciais e estratégia.
+- `MINHA_ESCALA_SPEC_COMPLETO.pdf`: especificação técnica geral, arquitetura, stack, módulos e roadmap técnico.
+- `MINHA_ESCALA_DATABASE_SPEC.pdf`: especificação inicial do banco de dados, entidades, índices e regras.
 
 ## Documentos adicionados para continuidade
 

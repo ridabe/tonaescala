@@ -35,7 +35,7 @@ export async function getStoredCredentials(): Promise<{ email: string; password:
   }
 }
 
-export async function authenticate(promptMessage = 'Entrar no ToNaEscala'): Promise<boolean> {
+export async function authenticate(promptMessage = 'Entrar no Minha Escala'): Promise<boolean> {
   const result = await LocalAuthentication.authenticateAsync({
     promptMessage,
     cancelLabel: 'Cancelar',

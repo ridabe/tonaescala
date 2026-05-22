@@ -1,4 +1,4 @@
-# Assets Play Store - ToNaEscala
+# Assets Play Store - Minha Escala
 
 Pasta gerada para envio e preparacao da ficha do Google Play Console. Os arquivos originais da pasta `img/` foram preservados.
 

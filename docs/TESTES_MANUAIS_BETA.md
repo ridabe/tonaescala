@@ -1,8 +1,8 @@
-# TESTES MANUAIS BETA - ToNaEscala
+# TESTES MANUAIS BETA - Minha Escala
 
 ## 1. Objetivo
 
-Validar o fluxo atual do ToNaEscala antes do beta externo, com foco no novo modelo de convocacoes por `codigo do evento + email`.
+Validar o fluxo atual do Minha Escala antes do beta externo, com foco no novo modelo de convocacoes por `codigo do evento + email`.
 
 ## 2. Preparacao
 

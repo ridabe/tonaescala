@@ -1,5 +1,5 @@
 -- ============================================================
--- ToNaEscala - New Scope Phase 2: Event assignments
+-- Minha Escala - New Scope Phase 2: Event assignments
 -- ============================================================
 -- Adds the database foundation for invited assignments identified by
 -- event invite code + invitee email.

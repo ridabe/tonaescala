@@ -1,8 +1,8 @@
-# Fluxo de Convocacoes - ToNaEscala
+# Fluxo de Convocacoes - Minha Escala
 
 ## 1. Objetivo
 
-Definir a nova regra de produto para escalas por convocacao. O ToNaEscala deixa de tratar o codigo do evento como uma entrada aberta e passa a usar o par `codigo do evento + email` para identificar quem foi convocado.
+Definir a nova regra de produto para escalas por convocacao. O Minha Escala deixa de tratar o codigo do evento como uma entrada aberta e passa a usar o par `codigo do evento + email` para identificar quem foi convocado.
 
 ## 2. Principio central
 

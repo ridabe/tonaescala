@@ -1,4 +1,4 @@
-# Wireframes MVP - ToNaEscala
+# Wireframes MVP - Minha Escala
 
 Wireframes textuais para orientar as telas do MVP com o novo fluxo de convocacoes.
 
@@ -6,7 +6,7 @@ Wireframes textuais para orientar as telas do MVP com o novo fluxo de convocacoe
 
 ```text
 +-----------------------------+
-| ToNaEscala                  |
+| Minha Escala                  |
 | Organize escalas rapido     |
 |                             |
 | [Entrar com Google]         |

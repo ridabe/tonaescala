@@ -30,7 +30,7 @@ import {
 const CURRENT_PLAN = {
   name: 'Free',
   status: 'Ativo',
-  description: 'Plano inicial para validar o uso do ToNaEscala com sua equipe.',
+  description: 'Plano inicial para validar o uso do Minha Escala com sua equipe.',
   features: [
     'Criacao de eventos habilitada',
     'Convocacoes por codigo + email',

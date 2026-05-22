@@ -1,5 +1,5 @@
 -- ============================================================
--- ToNaEscala — Phase 3: Conflicts & Notifications
+-- Minha Escala — Phase 3: Conflicts & Notifications
 -- ============================================================
 
 -- 1. Add push_token to participants

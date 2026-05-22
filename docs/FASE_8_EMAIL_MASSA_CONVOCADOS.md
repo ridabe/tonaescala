@@ -65,7 +65,7 @@ Funcao: {funcao}
 Chegada: {horario_chegada}
 Observacoes: {observacoes}
 
-Para visualizar e responder sua convocacao, acesse o app ToNaEscala usando:
+Para visualizar e responder sua convocacao, acesse o app Minha Escala usando:
 
 Codigo do evento: {invite_code}
 Email convocado: {invitee_email}
@@ -80,13 +80,13 @@ O QR Code deve apontar para um link de entrada no evento, nao conter dados sensi
 Formato recomendado para o MVP:
 
 ```text
-tonaescala://enter-event?invite_code={invite_code}
+minhaescala://enter-event?invite_code={invite_code}
 ```
 
 Formato recomendado para web/deep link publico:
 
 ```text
-https://app.tonaescala.com/enter-event?invite_code={invite_code}
+https://app.minhaescala.com/enter-event?invite_code={invite_code}
 ```
 
 O email continua sendo exigido na tela de entrada. Isso evita que o QR Code sozinho libere os detalhes da convocacao.

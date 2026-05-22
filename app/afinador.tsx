@@ -311,7 +311,7 @@ export default function AfinadorScreen() {
           'Permissão necessária',
           result.canAskAgain
             ? 'O afinador precisa acessar o microfone para detectar a nota tocada.'
-            : 'Acesso ao microfone foi negado. Ative nas Configurações do aparelho > Aplicativos > ToNaEscala > Permissões.',
+            : 'Acesso ao microfone foi negado. Ative nas Configurações do aparelho > Aplicativos > Minha Escala > Permissões.',
           [{ text: 'OK' }],
         );
         return;

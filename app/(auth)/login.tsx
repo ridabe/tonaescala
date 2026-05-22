@@ -240,7 +240,7 @@ export default function LoginScreen() {
           <View style={s.brandRow}>
             <Image source={require('@/assets/images/icon.png')} style={s.logoImg} />
             <View style={{ flex: 1 }}>
-              <Text style={[s.appName, { color: primary }]}>ToNaEscala</Text>
+              <Text style={[s.appName, { color: primary }]}>Minha Escala</Text>
               <Text style={[Typography.caption, { color: colors.textMuted }]}>
                 Escalas organizadas para pessoas que servem juntas
               </Text>

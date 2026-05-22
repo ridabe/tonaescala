@@ -1,5 +1,5 @@
 -- ============================================================
--- ToNaEscala - SaaS foundation
+-- Minha Escala - SaaS foundation
 -- ============================================================
 -- This migration keeps the current app experience unchanged while
 -- preparing the backend for plans, subscriptions, and multi-admin orgs.

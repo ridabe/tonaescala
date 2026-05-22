@@ -1,8 +1,8 @@
-# IDENTIDADE VISUAL - ToNaEscala
+# IDENTIDADE VISUAL - Minha Escala
 
 ## 1. Direcao escolhida
 
-A identidade visual do ToNaEscala segue a Proposta 2: uma marca acolhedora, organizada e comunitaria, pensada para igrejas, ministerios, equipes de voluntarios e organizadores de eventos.
+A identidade visual do Minha Escala segue a Proposta 2: uma marca acolhedora, organizada e comunitaria, pensada para igrejas, ministerios, equipes de voluntarios e organizadores de eventos.
 
 A interface deve parecer:
 
