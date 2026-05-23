@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Minha Escala",
-    "slug": "minhaescala",
+    "slug": "tonaescala",
     "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "minhaescala",
+    "scheme": "tonaescala",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.minhaescala.app",
+      "bundleIdentifier": "com.tonaescala.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "O Afinador usa o microfone para detectar a nota tocada no instrumento.",
         "NSFaceIDUsageDescription": "O Minha Escala usa Biometria para autenticar seu login com segurança."
       }
     },
     "android": {
-      "package": "com.minhaescala.app",
+      "package": "com.tonaescala.app",
       "versionCode": 8,
       "newArchEnabled": true,
       "adaptiveIcon": {
